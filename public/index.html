@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Professor Byte — AI Classroom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════ HUD BAR (top) ══════════════════════ -->
+<header class="hud-bar">
+  <div class="hud-left">
+    <div class="prof-avatar" id="profAvatar" title="Professor Byte">🎓</div>
+    <div class="player-info">
+      <span class="player-name" id="playerNameDisplay">Student</span>
+      <div class="level-badge">
+        <span class="level-icon">⚡</span>
+        <span id="playerLevel">Lv 1</span>
+        <span class="level-title" id="levelTitle">Rookie</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud-center">
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-track">
+        <div class="xp-bar-fill" id="xpBarFill"></div>
+        <span class="xp-bar-label" id="xpBarLabel">0 / 200 XP</span>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat-chip" title="Total XP Earned">
+        <span class="stat-icon">✨</span>
+        <span id="totalXP">0</span> XP
+      </div>
+      <div class="stat-chip streak-chip" title="Day Streak" id="streakChip">
+        <span class="stat-icon">🔥</span>
+        <span id="streakCount">0</span> day streak
+      </div>
+      <div class="stat-chip" title="Lessons Completed">
+        <span class="stat-icon">📚</span>
+        <span id="lessonsCount">0</span> lessons
+      </div>
+      <div class="stat-chip" title="Quiz Accuracy">
+        <span class="stat-icon">🎯</span>
+        <span id="quizAccuracy">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud-right">
+    <button class="hud-btn" id="badgesBtn" title="View Badges">🏅 Badges</button>
+    <button class="hud-btn" id="leaderboardBtn" title="Leaderboard">🏆</button>
+    <button class="hud-btn" id="settingsBtn" title="Settings">⚙️</button>
+  </div>
+</header>
+
+<!-- ══════════════════════ SPLASH / ONBOARDING ══════════════════════ -->
+<div class="modal-overlay active" id="splashOverlay">
+  <div class="modal splash-modal">
+    <div class="splash-prof">🎓</div>
+    <h1 class="splash-title">Professor Byte</h1>
+    <p class="splash-sub">The AI-Powered Blackboard Experience</p>
+    <div class="splash-tagline">Learn. Level Up. Master Anything.</div>
+    <div class="name-input-wrap">
+      <label for="studentNameInput">What should I call you, student?</label>
+      <input type="text" id="studentNameInput" placeholder="Enter your name…" maxlength="20" autocomplete="off" />
+    </div>
+    <button class="btn-primary btn-lg" id="startAdventureBtn">
+      <span>⚡ Begin Your Journey</span>
+    </button>
+    <div class="splash-features">
+      <div class="feat">📖 AI Lessons</div>
+      <div class="feat">🎮 XP & Levels</div>
+      <div class="feat">🧠 Quizzes</div>
+      <div class="feat">🏅 Badges</div>
+      <div class="feat">🔥 Streaks</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MAIN GAME LAYOUT ══════════════════════ -->
+<main class="game-layout" id="gameLayout">
+
+  <!-- LEFT SIDEBAR — Topic Navigator & History -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-icon">🗂️</span>
+      <span>My Lessons</span>
+      <button class="collapse-btn" id="collapseBtn" title="Toggle sidebar">◀</button>
+    </div>
+
+    <!-- New Topic Input -->
+    <div class="new-topic-panel">
+      <div class="new-topic-label">📡 New Topic</div>
+      <div class="topic-input-row">
+        <input
+          type="text"
+          id="topicInput"
+          class="topic-input"
+          placeholder="e.g. Photosynthesis…"
+          maxlength="120"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button class="teach-btn" id="teachBtn" title="Start Lesson">▶</button>
+      </div>
+      <div class="topic-suggestions">
+        <span class="sug-label">💡 Try:</span>
+        <button class="sug-chip" data-topic="Photosynthesis">Photosynthesis</button>
+        <button class="sug-chip" data-topic="Newton's Laws of Motion">Newton's Laws</button>
+        <button class="sug-chip" data-topic="The French Revolution">French Revolution</button>
+        <button class="sug-chip" data-topic="DNA and Genetics">DNA & Genetics</button>
+        <button class="sug-chip" data-topic="Python Programming Basics">Python Basics</button>
+        <button class="sug-chip" data-topic="Algebra: Quadratic Equations">Quadratics</button>
+        <button class="sug-chip" data-topic="How the Internet Works">The Internet</button>
+        <button class="sug-chip" data-topic="Climate Change and Global Warming">Climate Change</button>
+      </div>
+    </div>
+
+    <!-- Lesson History -->
+    <div class="history-label">📜 History</div>
+    <div class="lesson-history" id="lessonHistory">
+      <div class="history-empty">No lessons yet. Start one above! 👆</div>
+    </div>
+
+    <!-- Daily Challenge -->
+    <div class="daily-challenge" id="dailyChallenge">
+      <div class="dc-header">🌟 Daily Challenge</div>
+      <div class="dc-topic" id="dcTopic">Loading…</div>
+      <div class="dc-bonus">+50 Bonus XP</div>
+      <button class="btn-daily" id="dcBtn">Accept Challenge</button>
+    </div>
+  </aside>
+
+  <!-- CENTRE — Blackboard -->
+  <section class="board-section">
+
+    <!-- Lesson Meta Bar (above board) -->
+    <div class="lesson-meta" id="lessonMeta" style="display:none">
+      <div class="meta-left">
+        <span class="meta-topic" id="metaTopic"></span>
+        <span class="meta-diff" id="metaDiff"></span>
+      </div>
+      <div class="meta-right">
+        <span class="meta-xp" id="metaXP"></span>
+        <span class="meta-terms" id="metaTerms"></span>
+      </div>
+    </div>
+
+    <!-- The Blackboard Canvas -->
+    <div class="board-frame">
+      <div class="board-chalk-tray">
+        <div class="chalk white"></div><div class="chalk yellow"></div>
+        <div class="chalk green"></div><div class="chalk pink"></div>
+        <div class="chalk blue"></div>
+        <div class="eraser">🧹</div>
+      </div>
+
+      <canvas id="boardCanvas"></canvas>
+
+      <!-- Idle / Empty state overlay -->
+      <div class="board-idle" id="boardIdle">
+        <div class="idle-prof">🎓</div>
+        <div class="idle-text">Professor Byte is ready to teach!</div>
+        <div class="idle-sub">Type a topic → Press ▶ to start your lesson</div>
+        <div class="idle-hint">✨ Complete lessons to earn XP and unlock badges</div>
+      </div>
+
+      <!-- Loading state -->
+      <div class="board-loading" id="boardLoading" style="display:none">
+        <div class="loading-chalk">✏️</div>
+        <div class="loading-text" id="loadingText">Professor Byte is preparing your lesson…</div>
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <!-- Board Controls -->
+    <div class="board-controls" id="boardControls" style="display:none">
+      <button class="ctrl-btn" id="pauseBtn" title="Pause/Resume writing">⏸ Pause</button>
+      <button class="ctrl-btn" id="speedBtn" title="Toggle writing speed">🐇 Fast</button>
+      <button class="ctrl-btn" id="clearBtn" title="Clear board (new topic)">🗑️ Clear</button>
+      <button class="ctrl-btn" id="screenshotBtn" title="Save as image">📷 Save</button>
+    </div>
+
+    <!-- Ask Follow-up Dock -->
+    <div class="ask-dock" id="askDock" style="display:none">
+      <div class="ask-dock-inner">
+        <div class="ask-label">🙋 Ask Professor Byte</div>
+        <div class="ask-row">
+          <input
+            type="text"
+            id="askInput"
+            class="ask-input"
+            placeholder="Ask a follow-up question…"
+            maxlength="200"
+            autocomplete="off"
+          />
+          <button class="ask-btn" id="askBtn">Ask ➤</button>
+        </div>
+        <div class="ask-chips" id="askChips">
+          <!-- populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT PANEL — Quiz, Glossary, Fun Fact -->
+  <aside class="right-panel" id="rightPanel">
+
+    <!-- Fun Fact Card -->
+    <div class="panel-card fact-card" id="factCard" style="display:none">
+      <div class="card-header">🤯 Fun Fact</div>
+      <div class="fact-text" id="factText"></div>
+    </div>
+
+    <!-- Key Terms Glossary -->
+    <div class="panel-card glossary-card" id="glossaryCard" style="display:none">
+      <div class="card-header">📖 Key Terms</div>
+      <div class="glossary-list" id="glossaryList"></div>
+    </div>
+
+    <!-- Quiz Panel -->
+    <div class="panel-card quiz-card" id="quizCard" style="display:none">
+      <div class="card-header">🧠 Pop Quiz</div>
+      <div class="quiz-progress-bar">
+        <div class="quiz-prog-fill" id="quizProgFill"></div>
+      </div>
+      <div class="quiz-q-count" id="quizQCount">Question 1 / 3</div>
+      <div class="quiz-question" id="quizQuestion"></div>
+      <div class="quiz-options" id="quizOptions"></div>
+      <div class="quiz-explanation" id="quizExplanation" style="display:none"></div>
+      <div class="quiz-controls">
+        <button class="quiz-btn" id="quizNextBtn" style="display:none">Next ➤</button>
+      </div>
+    </div>
+
+    <!-- Quiz Result -->
+    <div class="panel-card result-card" id="resultCard" style="display:none">
+      <div class="result-stars" id="resultStars"></div>
+      <div class="result-score" id="resultScore"></div>
+      <div class="result-msg" id="resultMsg"></div>
+      <div class="result-xp" id="resultXP"></div>
+      <button class="quiz-btn btn-retry" id="retryQuizBtn">🔄 Retry Quiz</button>
+    </div>
+
+    <!-- Achievement Toast area -->
+    <div class="achievement-area" id="achievementArea"></div>
+  </aside>
+</main>
+
+<!-- ══════════════════════ MODALS ══════════════════════ -->
+
+<!-- Badges Modal -->
+<div class="modal-overlay" id="badgesOverlay">
+  <div class="modal badges-modal">
+    <button class="modal-close" data-close="badgesOverlay">✕</button>
+    <h2 class="modal-title">🏅 Your Badges</h2>
+    <div class="badges-grid" id="badgesGrid"></div>
+  </div>
+</div>
+
+<!-- Level Up Modal -->
+<div class="modal-overlay" id="levelUpOverlay">
+  <div class="modal levelup-modal">
+    <div class="lu-burst">🎉</div>
+    <h2 class="lu-title">LEVEL UP!</h2>
+    <div class="lu-level" id="luLevel"></div>
+    <div class="lu-title-name" id="luTitleName"></div>
+    <p class="lu-desc">You're on fire! Keep learning to unlock more badges.</p>
+    <button class="btn-primary" id="luCloseBtn">⚡ Let's Keep Going!</button>
+  </div>
+</div>
+
+<!-- XP Popup (floating) -->
+<div class="xp-popup" id="xpPopup" style="display:none">+<span id="xpPopupVal">0</span> XP</div>
+
+<!-- Checkpoint Popup -->
+<div class="modal-overlay" id="checkpointOverlay">
+  <div class="modal checkpoint-modal">
+    <div class="cp-icon">🤔</div>
+    <div class="cp-label">Checkpoint!</div>
+    <div class="cp-question" id="cpQuestion"></div>
+    <button class="cp-hint-btn" id="cpHintBtn">💡 Show Hint</button>
+    <div class="cp-hint" id="cpHint" style="display:none"></div>
+    <button class="btn-primary" id="cpContinueBtn">✅ Got it — Continue!</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal settings-modal">
+    <button class="modal-close" data-close="settingsOverlay">✕</button>
+    <h2 class="modal-title">⚙️ Settings</h2>
+    <div class="setting-row">
+      <label>Writing Speed</label>
+      <div class="speed-btns">
+        <button class="speed-opt" data-speed="slow">🐢 Slow</button>
+        <button class="speed-opt active" data-speed="normal">🚶 Normal</button>
+        <button class="speed-opt" data-speed="fast">🐇 Fast</button>
+        <button class="speed-opt" data-speed="instant">⚡ Instant</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>Sound Effects</label>
+      <button class="toggle-btn" id="soundToggle">🔊 ON</button>
+    </div>
+    <div class="setting-row">
+      <label>Chalk Color Theme</label>
+      <div class="color-opts">
+        <button class="color-opt active" data-theme="classic" style="background:#f5f5dc">Classic</button>
+        <button class="color-opt" data-theme="neon" style="background:#0d1b2a;color:#00ff88">Neon</button>
+        <button class="color-opt" data-theme="sunset" style="background:#2d1b00;color:#ffb347">Sunset</button>
+      </div>
+    </div>
+    <div class="setting-row danger-row">
+      <label>Reset Progress</label>
+      <button class="btn-danger" id="resetProgressBtn">⚠️ Reset All</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard Modal -->
+<div class="modal-overlay" id="leaderboardOverlay">
+  <div class="modal leaderboard-modal">
+    <button class="modal-close" data-close="leaderboardOverlay">✕</button>
+    <h2 class="modal-title">🏆 Hall of Fame</h2>
+    <div class="lb-your-rank" id="lbYourRank"></div>
+    <div class="lb-list" id="lbList"></div>
+    <p class="lb-note">* Local leaderboard — your sessions</p>
+  </div>
+</div>
+
+<script src="whiteboard.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
