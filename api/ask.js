@@ -26,6 +26,10 @@ module.exports = async (req, res) => {
     res.json({ ...parsed, interactionId: newInteractionId });
   } catch (err) {
     console.error('[/api/ask]', err);
-    res.status(500).json({ error: err.message });
+    const status = err.name === 'AbortError' ? 504 : 500;
+    const message = err.name === 'AbortError'
+      ? 'Request timed out. Please try again.'
+      : (err.message || 'Unknown server error');
+    res.status(status).json({ error: message });
   }
 };

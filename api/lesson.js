@@ -10,7 +10,8 @@ module.exports = async (req, res) => {
   }
 
   const topic = (body?.topic || '').trim();
-  if (!topic) return res.status(400).json({ error: 'topic is required' });
+  if (!topic) return res.status(400).json({ error: 'Topic is required' });
+  if (topic.length > 200) return res.status(400).json({ error: 'Topic is too long' });
 
   try {
     const { parsed, history } = await generateLesson(topic);
@@ -18,6 +19,10 @@ module.exports = async (req, res) => {
     res.json({ ...parsed, interactionId });
   } catch (err) {
     console.error('[/api/lesson]', err);
-    res.status(500).json({ error: err.message });
+    const status = err.status || (err.name === 'AbortError' ? 504 : 500);
+    const message = err.name === 'AbortError'
+      ? 'Request timed out — Groq took too long. Please try again.'
+      : (err.message || 'Unknown server error');
+    res.status(status).json({ error: message });
   }
 };
