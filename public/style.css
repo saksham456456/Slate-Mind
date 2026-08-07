@@ -983,3 +983,176 @@ body {
   .hud-stats { display: none; }
   .hud-center { align-items: flex-start; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   PATCH v2.1 — All bug fixes & new features
+   ═══════════════════════════════════════════════════════ */
+
+/* ── MOBILE BLOCK SCREEN ─────────────────────────────── */
+.mobile-block {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg-room);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+}
+@media (max-width: 768px) {
+  .mobile-block { display: flex; }
+  .game-layout, .hud-bar { display: none !important; }
+  .modal-overlay { display: none !important; }
+}
+.mb-inner { max-width: 360px; text-align: center; }
+.mb-icon  { font-size: 64px; margin-bottom: 16px; animation: bob 3s ease-in-out infinite; }
+.mb-title {
+  font-family: var(--font-game);
+  font-size: 28px;
+  background: linear-gradient(90deg, var(--xp-gold), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.mb-sub   { font-family: var(--font-game); font-size: 11px; color: var(--accent); letter-spacing: 1px; margin-bottom: 16px; }
+.mb-desc  { font-size: 14px; color: #aaa; line-height: 1.7; margin-bottom: 20px; }
+.mb-specs { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
+.mb-spec  {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #ccc;
+}
+.mb-hint { font-size: 13px; color: #f4c542; font-family: var(--font-game); font-size: 10px; letter-spacing: 0.5px; }
+
+/* ── SIDEBAR OPEN BUTTON (HUD) ───────────────────────── */
+.sidebar-open-btn {
+  background: rgba(0,229,160,0.12);
+  border: 1px solid rgba(0,229,160,0.3);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-game);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.sidebar-open-btn:hover {
+  background: rgba(0,229,160,0.2);
+  box-shadow: 0 0 10px rgba(0,229,160,0.3);
+}
+
+/* ── CANVAS SCROLL WRAP ──────────────────────────────── */
+.canvas-scroll-wrap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  bottom: 28px; /* chalk tray height */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+.canvas-scroll-wrap::-webkit-scrollbar { width: 6px; }
+.canvas-scroll-wrap::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+.canvas-scroll-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.canvas-scroll-wrap::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+#boardCanvas {
+  display: block;
+  width: 100%;
+  /* height is set dynamically by whiteboard.js */
+}
+
+/* ── TOPIC ERROR STATE ───────────────────────────────── */
+.input-error {
+  color: #ef4444;
+  font-size: 11px;
+  margin-top: 5px;
+  font-family: var(--font-game);
+  animation: pulse 1s ease-in-out 3;
+}
+.topic-input.error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239,68,68,0.2) !important;
+}
+
+/* ── BOARD ERROR STATE ───────────────────────────────── */
+.board-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: auto;
+  background: rgba(0,0,0,0.15);
+}
+.err-icon { font-size: 48px; }
+.err-text {
+  font-family: var(--font-chalk);
+  font-size: 22px;
+  color: #fca5a5;
+  text-align: center;
+  max-width: 400px;
+  line-height: 1.4;
+}
+.err-retry {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border: none;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-game);
+  transition: all 0.2s;
+}
+.err-retry:hover { transform: scale(1.05); }
+
+/* ── LEVEL UP XP EARNED ─────────────────────────────── */
+.lu-xp-earned {
+  font-family: var(--font-game);
+  font-size: 18px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  animation: pulse 1.5s infinite;
+}
+
+/* ── CHANGE NAME BTN ────────────────────────────────── */
+.btn-change-name {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #ccc;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-game);
+  transition: all 0.2s;
+}
+.btn-change-name:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* ── DISABLED DAILY CHALLENGE BUTTON ────────────────── */
+.btn-daily:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ── BOARD FRAME — position fix for scroll wrap ─────── */
+.board-frame {
+  position: relative;
+  overflow: hidden;
+}
+.board-idle,
+.board-loading,
+.board-error {
+  z-index: 10;
+}
+
+/* ── QUIZ ACCURACY STAT ─────────────────────────────── */
+#topicsCount { font-variant-numeric: tabular-nums; }
