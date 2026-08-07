@@ -12,6 +12,12 @@ module.exports = async (req, res) => {
   const topic = (body?.topic || '').trim();
   if (!topic) return res.status(400).json({ error: 'topic is required' });
 
+  const blocklist = ['porn', 'sex', 'kill', 'hack', 'bomb', 'drug', 'weapon'];
+  const lowerTopic = topic.toLowerCase();
+  if (blocklist.some(word => lowerTopic.includes(word))) {
+    return res.status(400).json({ error: 'Please enter an educational topic' });
+  }
+
   try {
     const { parsed, history } = await generateLesson(topic);
     const interactionId = Buffer.from(JSON.stringify(history)).toString('base64');

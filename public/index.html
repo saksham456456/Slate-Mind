@@ -4,11 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Professor Byte — AI Classroom</title>
+  <meta name="description" content="Professor Byte — Learn anything with an AI teacher that writes on a blackboard like a human tutor.">
+  <meta property="og:title" content="Professor Byte — AI Classroom">
+  <meta property="og:description" content="Learn any topic with an AI teacher on an interactive blackboard. Earn XP, badges, and streaks.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://slate-mind.vercel.app">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y=\".9em\" font-size=\"90\">🎓</text></svg>">
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+<div id="mobileBlock" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #050f1a; color: white; z-index: 999999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem;">
+  <div style="font-size: 4rem; margin-bottom: 1rem;">📱</div>
+  <h2 style="font-family: 'Chalkboard SE', sans-serif;">Bigger Screen Required</h2>
+  <p style="opacity: 0.8; max-width: 300px; margin-top: 1rem;">Professor Byte's blackboard is optimized for laptops, desktops, and tablets. Please switch to a larger device for the best learning experience.</p>
+</div>
+
 
 <!-- ══════════════════════ HUD BAR (top) ══════════════════════ -->
 <header class="hud-bar">
@@ -44,10 +58,7 @@
         <span class="stat-icon">📚</span>
         <span id="lessonsCount">0</span> lessons
       </div>
-      <div class="stat-chip" title="Quiz Accuracy">
-        <span class="stat-icon">🎯</span>
-        <span id="quizAccuracy">—</span>
-      </div>
+
     </div>
   </div>
 
@@ -90,7 +101,7 @@
     <div class="sidebar-header">
       <span class="sidebar-icon">🗂️</span>
       <span>My Lessons</span>
-      <button class="collapse-btn" id="collapseBtn" title="Toggle sidebar">◀</button>
+      <button class="collapse-btn" id="collapseBtn" title="Toggle sidebar">✕ Close</button>
     </div>
 
     <!-- New Topic Input -->
@@ -271,6 +282,7 @@
     <h2 class="lu-title">LEVEL UP!</h2>
     <div class="lu-level" id="luLevel"></div>
     <div class="lu-title-name" id="luTitleName"></div>
+    <div id="xp-earned" style="color: var(--accent-green); font-weight: bold; font-size: 1.2rem; margin: 10px 0;">+0 XP</div>
     <p class="lu-desc">You're on fire! Keep learning to unlock more badges.</p>
     <button class="btn-primary" id="luCloseBtn">⚡ Let's Keep Going!</button>
   </div>
@@ -317,6 +329,10 @@
         <button class="color-opt" data-theme="sunset" style="background:#2d1b00;color:#ffb347">Sunset</button>
       </div>
     </div>
+    <div class="setting-row">
+      <label>Change Name</label>
+      <button class="btn-primary" id="changeNameBtn">👤 Not you?</button>
+    </div>
     <div class="setting-row danger-row">
       <label>Reset Progress</label>
       <button class="btn-danger" id="resetProgressBtn">⚠️ Reset All</button>
@@ -331,7 +347,7 @@
     <h2 class="modal-title">🏆 Hall of Fame</h2>
     <div class="lb-your-rank" id="lbYourRank"></div>
     <div class="lb-list" id="lbList"></div>
-    <p class="lb-note">* Local leaderboard — your sessions</p>
+    <p class="lb-note">Your personal learning history</p>
   </div>
 </div>
 

@@ -983,3 +983,11 @@ body {
   .hud-stats { display: none; }
   .hud-center { align-items: flex-start; }
 }
+
+.error { border: 2px solid red !important; }
+
+@media screen and (max-width: 600px) {
+  #mobileBlock {
+    display: flex !important;
+  }
+}

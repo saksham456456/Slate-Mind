@@ -5,6 +5,24 @@
 
 'use strict';
 
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 10000 } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+}
+
+
 /* ══════════════════════════════════════════════════════════════
    1. GAME CONFIG
 ══════════════════════════════════════════════════════════════ */
@@ -107,7 +125,7 @@ const DEFAULT_STATE = {
 let STATE = {};
 let interactionId  = null;
 let currentQuiz    = [];
-let quizIndex      = 0;
+let currentQuestionIndex = 1;
 let quizScore      = 0;
 let currentLesson  = null;
 let wb             = null; // Whiteboard instance
@@ -120,6 +138,7 @@ function loadState() {
   try {
     const raw = localStorage.getItem('pb_state_v2');
     STATE = raw ? { ...DEFAULT_STATE, ...JSON.parse(raw) } : { ...DEFAULT_STATE };
+    STATE.currentStreak = parseInt(localStorage.getItem('pb_streak') || '0');
   } catch {
     STATE = { ...DEFAULT_STATE };
   }
@@ -158,7 +177,7 @@ function awardXP(amount, label = '') {
   saveState();
 
   if (STATE.level > prevLevel) {
-    setTimeout(() => showLevelUp(current), 800);
+    setTimeout(() => showLevelUp(current, amount), 800);
   }
 
   checkBadges();
@@ -179,20 +198,18 @@ function getXPProgress() {
 
 function updateStreak() {
   const today = new Date().toDateString();
-  const last  = STATE.lastStudyDate;
-
-  if (last === today) return; // already counted
-
+  const lastVisit = localStorage.getItem('pb_lastVisit');
+  const streak = parseInt(localStorage.getItem('pb_streak') || '0');
+  if (lastVisit === today) return; // already counted today
   const yesterday = new Date(Date.now() - 86400000).toDateString();
-  if (last === yesterday) {
-    STATE.currentStreak++;
-  } else {
-    STATE.currentStreak = 1;
-  }
+  const newStreak = lastVisit === yesterday ? streak + 1 : 1;
+  localStorage.setItem('pb_streak', newStreak);
+  localStorage.setItem('pb_lastVisit', today);
 
-  if (STATE.currentStreak > STATE.maxStreak) STATE.maxStreak = STATE.currentStreak;
+  STATE.currentStreak = newStreak;
+  if (newStreak > STATE.maxStreak) STATE.maxStreak = newStreak;
   STATE.lastStudyDate = today;
-
+  return newStreak;
   // Night owl check
   const hour = new Date().getHours();
   if (hour >= 22 || hour < 4) STATE.nightStudy++;
@@ -259,7 +276,7 @@ function updateHUD() {
   const acc = STATE.quizTotal > 0
     ? Math.round((STATE.quizCorrect / STATE.quizTotal) * 100) + '%'
     : '—';
-  el('quizAccuracy').textContent = acc;
+  // removed quiz accuracy
 
   // Streak chip pulse if active
   const sc = el('streakChip');
@@ -287,9 +304,12 @@ function showXPPopup(amount) {
    9. LEVEL UP MODAL
 ══════════════════════════════════════════════════════════════ */
 
-function showLevelUp(lvlInfo) {
+function showLevelUp(lvlInfo, earnedXP) {
   el('luLevel').textContent     = `Level ${lvlInfo.level}`;
   el('luTitleName').textContent = lvlInfo.title;
+  if (el('xp-earned') && earnedXP) {
+    el('xp-earned').textContent = `+${earnedXP} XP`;
+  }
   openModal('levelUpOverlay');
   playSound('levelup');
   updateHUD();
@@ -310,7 +330,7 @@ async function startLesson(topic, isDaily = false) {
   el('loadingText').textContent    = LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
 
   try {
-    const res  = await fetch('/api/lesson', {
+    const res  = await fetchWithTimeout('/api/lesson', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic }),
@@ -353,8 +373,11 @@ async function startLesson(topic, isDaily = false) {
   } catch (err) {
     el('boardLoading').style.display = 'none';
     el('boardIdle').style.display    = 'flex';
-    el('boardIdle').querySelector('.idle-text').textContent = '❌ ' + err.message;
-    el('boardIdle').querySelector('.idle-sub').textContent  = 'Check your API key and try again.';
+    el('boardIdle').innerHTML = `
+      <div class="idle-prof">⚠️</div>
+      <div class="idle-text" style="color: #ff6b6b;">Professor Byte couldn't connect. Please try again.</div>
+      <button class="btn-primary" onclick="startLesson('${topic.replace(/'/g, '&apos;')}', ${isDaily})" style="margin-top: 15px;">🔄 Retry</button>
+    `;
     setUIState('idle');
     console.error('Lesson error:', err);
   }
@@ -425,7 +448,7 @@ async function askFollowUp(question) {
   setUIState('writing');
 
   try {
-    const res  = await fetch('/api/ask', {
+    const res  = await fetchWithTimeout('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, interactionId }),
@@ -458,7 +481,7 @@ async function askFollowUp(question) {
 function showQuiz(quiz) {
   if (!quiz || quiz.length === 0) return;
   currentQuiz = quiz;
-  quizIndex   = 0;
+  currentQuestionIndex = 1;
   quizScore   = 0;
 
   el('quizCard').style.display   = 'block';
@@ -468,13 +491,13 @@ function showQuiz(quiz) {
 }
 
 function renderQuizQuestion() {
-  const q = currentQuiz[quizIndex];
+  const q = currentQuiz[currentQuestionIndex - 1];
   if (!q) return;
 
   const total = currentQuiz.length;
-  el('quizQCount').textContent     = `Question ${quizIndex + 1} / ${total}`;
+  el('quizQCount').textContent     = `Question ${currentQuestionIndex} / ${total}`;
   el('quizQuestion').textContent   = q.question;
-  el('quizProgFill').style.width   = ((quizIndex / total) * 100) + '%';
+  el('quizProgFill').style.width   = (((currentQuestionIndex - 1) / total) * 100) + '%';
   el('quizExplanation').style.display = 'none';
   el('quizNextBtn').style.display  = 'none';
 
@@ -516,12 +539,12 @@ function handleQuizAnswer(chosen, q) {
   el('quizExplanation').textContent    = q.explanation;
   el('quizExplanation').style.display  = 'block';
   el('quizNextBtn').style.display      = 'inline-block';
-  el('quizNextBtn').textContent        = quizIndex < currentQuiz.length - 1 ? 'Next ➤' : 'See Results ➤';
+  el('quizNextBtn').textContent        = (currentQuestionIndex - 1) < currentQuiz.length - 1 ? 'Next ➤' : 'See Results ➤';
 }
 
 function nextQuizQuestion() {
-  quizIndex++;
-  if (quizIndex < currentQuiz.length) {
+  currentQuestionIndex++;
+  if ((currentQuestionIndex - 1) < currentQuiz.length) {
     renderQuizQuestion();
   } else {
     showQuizResult();
@@ -632,17 +655,28 @@ function renderHistory() {
    15. DAILY CHALLENGE
 ══════════════════════════════════════════════════════════════ */
 
-function setupDailyChallenge() {
+async function setupDailyChallenge() {
   const today = new Date().toDateString();
-  // Pick a challenge based on day of year for consistency
-  const dayIdx = Math.floor(Date.now() / 86400000) % DAILY_CHALLENGES.length;
-  const topic  = DAILY_CHALLENGES[dayIdx];
+  let topic;
+
+  el('dcBtn').disabled = true;
+  el('dcBtn').style.opacity = '0.5';
+
+  try {
+    const res = await fetchWithTimeout('/api/daily_challenge');
+    if (!res.ok) throw new Error('Failed to fetch challenge');
+    const data = await res.json();
+    topic = data.topic;
+  } catch (err) {
+    topic = "Explain the difference between speed and velocity in 3 sentences";
+  }
 
   el('dcTopic').textContent = topic;
 
   // Check if already done today
   const done = STATE.dailyChallengeDate === today && STATE.dailyChallengeDone;
   el('dcBtn').disabled = done;
+  el('dcBtn').style.opacity = done ? '0.5' : '1';
   el('dcBtn').textContent = done ? '✅ Completed Today!' : 'Accept Challenge';
 
   el('dcBtn').onclick = () => {
@@ -774,14 +808,12 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
 function getAudio() {
-  if (!audioCtx) {
-    try { audioCtx = new AudioCtx(); } catch { return null; }
-  }
   return audioCtx;
 }
 
 function playSound(type) {
   if (!STATE.soundOn) return;
+  if (!audioCtx) return;
   const ctx = getAudio();
   if (!ctx) return;
 
@@ -876,10 +908,14 @@ function el(id) { return document.getElementById(id); }
 function saveScreenshot() {
   const canvas = document.getElementById('boardCanvas');
   if (!canvas) return;
-  const link    = document.createElement('a');
-  link.download = `lesson-${Date.now()}.png`;
-  link.href     = canvas.toDataURL('image/png');
-  link.click();
+  canvas.toBlob(function(blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'professor-byte-lesson.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -889,6 +925,13 @@ function saveScreenshot() {
 function setupOnboarding() {
   const nameInput = el('studentNameInput');
   const startBtn  = el('startAdventureBtn');
+  const savedName = localStorage.getItem('professorByte_studentName');
+  if (savedName) {
+    STATE.playerName = savedName;
+    STATE.hasOnboarded = true;
+    closeModal('splashOverlay');
+    return;
+  }
 
   // Allow pressing Enter in name input
   nameInput.addEventListener('keydown', e => {
@@ -896,7 +939,9 @@ function setupOnboarding() {
   });
 
   startBtn.addEventListener('click', () => {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const name = nameInput.value.trim() || 'Student';
+    localStorage.setItem('professorByte_studentName', name);
     STATE.playerName  = name;
     STATE.hasOnboarded = true;
     saveState();
@@ -927,16 +972,16 @@ function wireEvents() {
   topicInput.style.pointerEvents = 'auto';
 
   teachBtn.addEventListener('click', () => {
-    const topic = topicInput.value.trim();
-    if (topic) {
-      startLesson(topic);
-      topicInput.value = '';
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (!topicInput.value.trim()) {
       topicInput.focus();
-    } else {
-      topicInput.focus();
-      topicInput.style.borderColor = '#ef4444';
-      setTimeout(() => topicInput.style.borderColor = '', 800);
+      topicInput.classList.add('error'); // add a red border via CSS
+      return;
     }
+    const topic = topicInput.value.trim();
+    startLesson(topic);
+    topicInput.value = '';
+    topicInput.focus();
   });
 
   topicInput.addEventListener('keydown', e => {
@@ -1015,7 +1060,7 @@ function wireEvents() {
   el('collapseBtn').addEventListener('click', () => {
     const sidebar = document.getElementById('sidebar');
     const collapsed = sidebar.classList.toggle('collapsed');
-    el('collapseBtn').textContent = collapsed ? '▶' : '◀';
+    el('collapseBtn').textContent = collapsed ? '📚 Lessons' : '✕ Close';
   });
 
   /* — Quiz — */
@@ -1086,11 +1131,19 @@ function wireEvents() {
   });
 
   el('resetProgressBtn').addEventListener('click', () => {
-    if (confirm('Reset ALL progress? This cannot be undone!')) {
-      localStorage.clear();
+    if (confirm('Are you sure? This will wipe all XP and badges.')) {
+      localStorage.removeItem('profByte_save2');
       location.reload();
     }
   });
+
+  const changeNameBtn = el('changeNameBtn');
+  if (changeNameBtn) {
+    changeNameBtn.addEventListener('click', () => {
+      localStorage.removeItem('professorByte_studentName');
+      location.reload();
+    });
+  }
 
   document.querySelectorAll('.color-opt').forEach(btn => {
     btn.addEventListener('click', () => {
