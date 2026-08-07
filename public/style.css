@@ -386,7 +386,7 @@ body {
   background: var(--bg-board);
   border-radius: var(--radius-lg);
   border: 4px solid var(--board-border);
-  overflow: hidden;
+  overflow-y: auto; overflow-x: hidden;
   box-shadow:
     inset 0 0 60px rgba(0,0,0,0.4),
     0 0 0 8px var(--frame-inner),

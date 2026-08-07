@@ -122,6 +122,7 @@ class Whiteboard {
 
     // Add a small separator line
     this.cy += 20;
+    this._ensureHeight();
     this._drawSeparator();
     this.cy += 26;
 
@@ -140,6 +141,7 @@ class Whiteboard {
   /* ── Block Dispatcher ──────────────────────────────────────── */
 
   async _renderBlock(block, idx) {
+    this._ensureHeight();
     const t = block.type;
     if (t === 'heading')    return this._renderHeading(block);
     if (t === 'text')       return this._renderText(block);
@@ -603,18 +605,47 @@ class Whiteboard {
 
   /* ── Canvas & Resize ─────────────────────────────────────── */
 
+  _ensureHeight() {
+    const s = this._scale();
+    const neededPx = this.cy * s + 400 * s; // 400px padding at bottom
+    if (neededPx > this.canvas.height) {
+      const oldCanvas = document.createElement('canvas');
+      oldCanvas.width = this.canvas.width;
+      oldCanvas.height = this.canvas.height;
+      oldCanvas.getContext('2d').drawImage(this.canvas, 0, 0);
+
+      this.canvas.height = neededPx;
+      this.canvas.style.height = (neededPx / (window.devicePixelRatio || 1)) + 'px';
+
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.drawImage(oldCanvas, 0, 0);
+    }
+  }
+
+
   _resize() {
     const canvas  = this.canvas;
     const parent  = canvas.parentElement;
     const rect    = parent.getBoundingClientRect();
     const dpr     = window.devicePixelRatio || 1;
     const w       = rect.width;
-    const h       = rect.height - 28; // chalk tray
+    const h       = Math.max(rect.height - 28, (canvas.height / dpr) || 0);
+
+    // Save before resize
+    const oldC = document.createElement('canvas');
+    oldC.width = canvas.width || (w * dpr);
+    oldC.height = canvas.height || (h * dpr);
+    if (canvas.width && canvas.height) {
+       oldC.getContext('2d').drawImage(canvas, 0, 0);
+    }
 
     canvas.width  = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width  = w  + 'px';
     canvas.style.height = h + 'px';
+
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.drawImage(oldC, 0, 0);
 
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this._aspectW = w * dpr;
