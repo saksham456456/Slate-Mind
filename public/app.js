@@ -232,6 +232,7 @@ function updateHUD() {
    8. XP POPUP
 ══════════════════════════════════════════════════════════════ */
 function showXPPopup(amount) {
+  playSound('xp');
   const popup = el('xpPopup');
   el('xpPopupVal').textContent = amount;
   popup.style.display  = 'block';
@@ -723,6 +724,26 @@ function playSound(type) {
   const now = ctx.currentTime;
 
   switch (type) {
+
+    case 'click':
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now+0.1);
+      osc.start(now); osc.stop(now+0.1); break;
+    case 'xp':
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880 + Math.random()*200, now);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now+0.2);
+      osc.start(now); osc.stop(now+0.2); break;
+    case 'combo':
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.setValueAtTime(800, now+0.05);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now+0.15);
+      osc.start(now); osc.stop(now+0.15); break;
     case 'correct':
       osc.type = 'sine';
       osc.frequency.setValueAtTime(523, now);
@@ -1069,3 +1090,56 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateHUD, 400);
   console.log('🎓 SlateMind v2.1 ready — Professor Byte at your service!');
 });
+
+
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('button, .topic-card, .quiz-opt');
+  if (target) playSound('click');
+});
+
+initAudioCtx(); // Ensure audio context is ready on first interaction
+
+
+/* Gamified Overlay Text System */
+function showFloatingText(x, y, text, type = 'normal') {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.className = type === 'combo' ? 'arcade-float arcade-combo' : 'arcade-float';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.body.appendChild(el);
+
+  if (type === 'combo') playSound('combo');
+
+  setTimeout(() => el.remove(), 1500);
+}
+
+// Hook into awardXP
+let comboMultiplier = 1;
+let comboTimer = null;
+
+const originalAwardXP = awardXP;
+awardXP = function(amount, x, y) {
+  const baseXP = amount;
+  amount = Math.floor(amount * comboMultiplier);
+
+  originalAwardXP(amount);
+
+  const displayX = x || (window.innerWidth / 2 - 50);
+  const displayY = y || (window.innerHeight / 2 - 50);
+
+  showFloatingText(displayX, displayY, `+${amount} XP`, 'normal');
+
+  if (comboMultiplier > 1) {
+    setTimeout(() => {
+      showFloatingText(displayX + (Math.random()*40-20), displayY - 40, `x${comboMultiplier.toFixed(1)} COMBO!`, 'combo');
+    }, 200);
+  }
+
+  comboMultiplier = Math.min(comboMultiplier + 0.5, 5); // Max 5x combo
+
+  clearTimeout(comboTimer);
+  comboTimer = setTimeout(() => {
+    comboMultiplier = 1;
+  }, 10000); // 10 seconds to keep combo
+};

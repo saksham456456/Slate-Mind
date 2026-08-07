@@ -26,13 +26,13 @@ const FONT_MONO  = '"Share Tech Mono", monospace';
 
 // Larger font sizes for better readability on screen
 const FONT_SIZES = {
-  heading:   38,
-  text:      22,
-  bullet:    21,
-  equation:  24,
-  emphasize: 24,
-  checkpoint:20,
-  label:     16,
+  heading:   52,
+  text:      32,
+  bullet:    30,
+  equation:  34,
+  emphasize: 34,
+  checkpoint:28,
+  label:     22,
 };
 
 /* ── Whiteboard Class ────────────────────────────────────────── */
