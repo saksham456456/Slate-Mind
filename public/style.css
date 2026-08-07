@@ -1156,3 +1156,58 @@ body {
 
 /* ── QUIZ ACCURACY STAT ─────────────────────────────── */
 #topicsCount { font-variant-numeric: tabular-nums; }
+
+
+/* Gamified Floating Text Overlays */
+.arcade-float {
+  position: fixed;
+  pointer-events: none;
+  font-family: 'Orbitron', 'Share Tech Mono', sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  color: #fff;
+  text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff;
+  z-index: 99999;
+  animation: floatUpFade 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.arcade-combo {
+  font-size: 42px;
+  color: #00ffff;
+  text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff, 2px 2px 0px #000;
+  transform-origin: center;
+  animation: floatUpCombo 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes floatUpFade {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+  80% { opacity: 1; transform: translateY(-60px) scale(1); }
+  100% { opacity: 0; transform: translateY(-80px) scale(0.8); }
+}
+
+@keyframes floatUpCombo {
+  0% { opacity: 0; transform: translateY(0) scale(0.2) rotate(-10deg); }
+  20% { opacity: 1; transform: translateY(-30px) scale(1.5) rotate(5deg); }
+  40% { transform: translateY(-40px) scale(1.2) rotate(-5deg); }
+  80% { opacity: 1; transform: translateY(-80px) scale(1.1) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+}
+
+/* Enhancing the Level Up modal for Arcade feel */
+#modalLevelUp .modal-content {
+  background: rgba(10, 10, 20, 0.95);
+  border: 4px solid #ff00ff;
+  box-shadow: 0 0 30px #ff00ff;
+  border-radius: 12px;
+}
+#luTitle {
+  font-family: 'Orbitron', sans-serif;
+  color: #00ffff;
+  text-shadow: 0 0 15px #00ffff;
+  font-size: 32px;
+}
+#luLevel {
+  color: #ff00ff;
+  text-shadow: 0 0 10px #ff00ff;
+}
