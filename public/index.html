@@ -1,57 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>SlateMind — AI Blackboard Teacher</title>
-
-  <!-- SEO + OG Meta -->
-  <meta name="description" content="SlateMind is an AI-powered gamified blackboard teacher. Learn any topic with animated handwriting, XP, badges, quizzes and daily streaks." />
-  <meta name="keywords" content="AI teacher, gamified learning, blackboard, education, CBSE, Professor Byte, SlateMind" />
-  <meta name="author" content="SlateMind" />
-  <meta property="og:title" content="SlateMind — AI Blackboard Teacher" />
-  <meta property="og:description" content="Learn anything with animated AI lessons, XP, badges, quizzes and streaks. Like a game, but you actually learn." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://slate-mind.vercel.app" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SlateMind — AI Blackboard Teacher" />
-  <meta name="twitter:description" content="Gamified AI lessons on a live blackboard. Earn XP, unlock badges, master anything." />
-
-  <!-- Emoji Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="SlateMind — AI-powered gamified blackboard teacher. Learn any topic with animated handwriting, XP, badges, quizzes and streaks."/>
+  <meta property="og:title" content="SlateMind — AI Blackboard Teacher"/>
+  <meta property="og:description" content="Learn anything with animated AI lessons, XP, badges and streaks. Like a game, but you actually learn."/>
+  <meta property="og:type" content="website"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
-<!-- ══ MOBILE BLOCK SCREEN ══════════════════════════════════ -->
+<!-- ══ MOBILE BLOCK ═══════════════════════════════════════════ -->
 <div class="mobile-block" id="mobileBlock">
   <div class="mb-inner">
     <div class="mb-icon">🖥️</div>
     <h1 class="mb-title">SlateMind</h1>
-    <p class="mb-sub">Best experienced on a laptop or desktop</p>
-    <p class="mb-desc">
-      SlateMind is an AI-powered blackboard classroom designed for large screens.<br/>
-      The animated lessons, game HUD, and quiz panels need a full display to work properly.
-    </p>
+    <p class="mb-sub">AI-Powered Gamified Blackboard</p>
+    <p class="mb-desc">SlateMind is designed for large screens — the animated blackboard, game HUD, and panels need a full display to work properly.</p>
     <div class="mb-specs">
       <div class="mb-spec">🖥️ Laptop / Desktop</div>
       <div class="mb-spec">📱 Tablet (landscape)</div>
     </div>
-    <p class="mb-hint">Please open this on a wider screen for the full experience.</p>
+    <p class="mb-hint">Please open on a wider screen for the full experience.</p>
   </div>
 </div>
 
-<!-- ══ HUD BAR ═════════════════════════════════════════════ -->
+<!-- ══ HUD BAR ════════════════════════════════════════════════ -->
 <header class="hud-bar">
   <div class="hud-left">
-    <!-- Sidebar open button (shown when sidebar is collapsed) -->
-    <button class="sidebar-open-btn" id="sidebarOpenBtn" title="Open Lessons Panel" style="display:none">
-      ☰ Lessons
-    </button>
-    <div class="prof-avatar" id="profAvatar" title="Professor Byte">🎓</div>
+    <button class="sidebar-open-btn" id="leftOpenBtn" style="display:none" title="Open lessons panel">☰ Lessons</button>
+    <div class="prof-avatar" id="profAvatar" title="Click me!">🎓</div>
     <div class="player-info">
       <span class="player-name" id="playerNameDisplay">Student</span>
       <div class="level-badge">
@@ -70,33 +53,24 @@
       </div>
     </div>
     <div class="hud-stats">
-      <div class="stat-chip" title="Total XP Earned">
-        <span class="stat-icon">✨</span>
-        <span id="totalXP">0</span> XP
-      </div>
-      <div class="stat-chip streak-chip" id="streakChip" title="Day Streak">
-        <span class="stat-icon">🔥</span>
-        <span id="streakCount">0</span> day streak
-      </div>
-      <div class="stat-chip" title="Lessons Completed">
-        <span class="stat-icon">📚</span>
-        <span id="lessonsCount">0</span> lessons
-      </div>
-      <div class="stat-chip" title="Topics Explored">
-        <span class="stat-icon">🎯</span>
-        <span id="topicsCount">0</span> topics
-      </div>
+      <div class="stat-chip"><span>✨</span><span id="totalXP">0</span> XP</div>
+      <div class="stat-chip streak-chip" id="streakChip"><span>🔥</span><span id="streakCount">0</span> streak</div>
+      <div class="stat-chip"><span>📚</span><span id="lessonsCount">0</span> lessons</div>
+      <div class="stat-chip"><span>🎯</span><span id="topicsCount">0</span> topics</div>
     </div>
   </div>
 
   <div class="hud-right">
-    <button class="hud-btn" id="badgesBtn" title="View Badges">🏅 Badges</button>
-    <button class="hud-btn" id="leaderboardBtn" title="Leaderboard">🏆</button>
-    <button class="hud-btn" id="settingsBtn" title="Settings">⚙️</button>
+    <button class="hud-btn" id="fullscreenBtn" title="Fullscreen board">⛶</button>
+    <button class="hud-btn" id="badgesBtn">🏅 Badges</button>
+    <button class="hud-btn" id="leaderboardBtn">🏆</button>
+    <button class="hud-btn" id="settingsBtn">⚙️</button>
+    <!-- Right panel open button, shown when right sidebar is closed -->
+    <button class="hud-btn rs-open-hud" id="rightOpenHudBtn" style="display:none" title="Open notes panel">📋 Notes</button>
   </div>
 </header>
 
-<!-- ══ SPLASH / ONBOARDING ══════════════════════════════════ -->
+<!-- ══ SPLASH ════════════════════════════════════════════════ -->
 <div class="modal-overlay active" id="splashOverlay">
   <div class="modal splash-modal">
     <div class="splash-prof">🎓</div>
@@ -105,11 +79,9 @@
     <div class="splash-tagline">Learn. Level Up. Master Anything.</div>
     <div class="name-input-wrap">
       <label for="studentNameInput">What should I call you, student?</label>
-      <input type="text" id="studentNameInput" placeholder="Enter your name…" maxlength="20" autocomplete="off" />
+      <input type="text" id="studentNameInput" placeholder="Enter your name…" maxlength="20" autocomplete="off"/>
     </div>
-    <button class="btn-primary btn-lg" id="startAdventureBtn">
-      <span>⚡ Begin Your Journey</span>
-    </button>
+    <button class="btn-primary btn-lg" id="startAdventureBtn">⚡ Begin Your Journey</button>
     <div class="splash-features">
       <div class="feat">📖 AI Lessons</div>
       <div class="feat">🎮 XP & Levels</div>
@@ -120,32 +92,23 @@
   </div>
 </div>
 
-<!-- ══ MAIN GAME LAYOUT ══════════════════════════════════════ -->
+<!-- ══ MAIN LAYOUT ════════════════════════════════════════════ -->
 <main class="game-layout" id="gameLayout">
 
-  <!-- LEFT SIDEBAR -->
-  <aside class="sidebar" id="sidebar">
+  <!-- ── LEFT SIDEBAR ──────────────────────────────────────── -->
+  <aside class="sidebar left-sidebar" id="leftSidebar">
     <div class="sidebar-header">
-      <span class="sidebar-icon">🗂️</span>
-      <span>My Lessons</span>
-      <button class="collapse-btn" id="collapseBtn" title="Close sidebar">✕ Close</button>
+      <span>🗂️ My Lessons</span>
+      <button class="collapse-btn" id="leftCloseBtn">✕ Close</button>
     </div>
 
     <div class="new-topic-panel">
       <div class="new-topic-label">📡 New Topic</div>
       <div class="topic-input-row">
-        <input
-          type="text"
-          id="topicInput"
-          class="topic-input"
+        <input type="text" id="topicInput" class="topic-input"
           placeholder="e.g. Photosynthesis…"
-          maxlength="120"
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-          tabindex="1"
-        />
-        <button class="teach-btn" id="teachBtn" title="Start Lesson" tabindex="2">▶</button>
+          maxlength="120" autocomplete="off" autocorrect="off" spellcheck="false" tabindex="1"/>
+        <button class="teach-btn" id="teachBtn" tabindex="2">▶</button>
       </div>
       <div class="input-error" id="topicError" style="display:none">⚠ Please enter a topic first</div>
       <div class="topic-suggestions">
@@ -155,10 +118,10 @@
         <button class="sug-chip" data-topic="The French Revolution">French Revolution</button>
         <button class="sug-chip" data-topic="DNA and Genetics">DNA & Genetics</button>
         <button class="sug-chip" data-topic="Python Programming Basics">Python Basics</button>
-        <button class="sug-chip" data-topic="Algebra: Quadratic Equations">Quadratics</button>
+        <button class="sug-chip" data-topic="Algebra Quadratic Equations">Quadratics</button>
         <button class="sug-chip" data-topic="How the Internet Works">The Internet</button>
-        <button class="sug-chip" data-topic="Climate Change and Global Warming">Climate Change</button>
-        <button class="sug-chip" data-topic="Ohm's Law and Electric Circuits">Ohm's Law</button>
+        <button class="sug-chip" data-topic="Climate Change">Climate Change</button>
+        <button class="sug-chip" data-topic="Ohm's Law">Ohm's Law</button>
         <button class="sug-chip" data-topic="The Water Cycle">Water Cycle</button>
       </div>
     </div>
@@ -168,7 +131,7 @@
       <div class="history-empty">No lessons yet. Start one above! 👆</div>
     </div>
 
-    <div class="daily-challenge" id="dailyChallenge">
+    <div class="daily-challenge">
       <div class="dc-header">🌟 Daily Challenge</div>
       <div class="dc-topic" id="dcTopic">Loading…</div>
       <div class="dc-bonus">+50 Bonus XP</div>
@@ -176,8 +139,10 @@
     </div>
   </aside>
 
-  <!-- CENTRE — Blackboard -->
-  <section class="board-section">
+  <!-- ── BOARD SECTION ─────────────────────────────────────── -->
+  <section class="board-section" id="boardSection">
+
+    <!-- Lesson meta strip -->
     <div class="lesson-meta" id="lessonMeta" style="display:none">
       <div class="meta-left">
         <span class="meta-topic" id="metaTopic"></span>
@@ -189,33 +154,34 @@
       </div>
     </div>
 
-    <div class="board-frame">
+    <!-- The Blackboard -->
+    <div class="board-frame" id="boardFrame">
       <div class="board-chalk-tray">
-        <div class="chalk white"></div><div class="chalk yellow"></div>
-        <div class="chalk green"></div><div class="chalk pink"></div>
+        <div class="chalk white"></div>
+        <div class="chalk yellow"></div>
+        <div class="chalk green"></div>
+        <div class="chalk pink"></div>
         <div class="chalk blue"></div>
         <div class="eraser" title="Clear board">🧹</div>
       </div>
 
-      <!-- Scrollable canvas wrapper -->
+      <!-- Scrollable canvas -->
       <div class="canvas-scroll-wrap" id="canvasScrollWrap">
         <canvas id="boardCanvas"></canvas>
       </div>
 
+      <!-- States -->
       <div class="board-idle" id="boardIdle">
         <div class="idle-prof">🎓</div>
         <div class="idle-text">Professor Byte is ready to teach!</div>
-        <div class="idle-sub">Type a topic → Press ▶ to start your lesson</div>
-        <div class="idle-hint">✨ Complete lessons to earn XP and unlock badges</div>
+        <div class="idle-sub">Type a topic and press ▶ to start</div>
+        <div class="idle-hint">✨ Earn XP, unlock badges, master anything</div>
       </div>
-
       <div class="board-loading" id="boardLoading" style="display:none">
         <div class="loading-chalk">✏️</div>
-        <div class="loading-text" id="loadingText">Professor Byte is preparing your lesson…</div>
+        <div class="loading-text" id="loadingText">Preparing your lesson…</div>
         <div class="loading-dots"><span></span><span></span><span></span></div>
       </div>
-
-      <!-- Error state -->
       <div class="board-error" id="boardError" style="display:none">
         <div class="err-icon">⚠️</div>
         <div class="err-text" id="errText">Professor Byte couldn't connect. Please try again.</div>
@@ -223,69 +189,90 @@
       </div>
     </div>
 
+    <!-- Board Controls bar -->
     <div class="board-controls" id="boardControls" style="display:none">
       <button class="ctrl-btn" id="pauseBtn">⏸ Pause</button>
       <button class="ctrl-btn" id="speedBtn">🐇 Fast</button>
       <button class="ctrl-btn" id="clearBtn">🗑️ Clear</button>
       <button class="ctrl-btn" id="screenshotBtn">📷 Save</button>
+      <button class="ctrl-btn ctrl-fs" id="boardFsBtn" title="Fullscreen board">⛶ Fullscreen</button>
     </div>
 
-    <div class="ask-dock" id="askDock" style="display:none">
-      <div class="ask-dock-inner">
-        <div class="ask-label">🙋 Ask Professor Byte a follow-up question</div>
+    <!-- ── BOTTOM ASK BAR (always visible after lesson) ─── -->
+    <div class="ask-bar" id="askBar" style="display:none">
+      <div class="ask-bar-inner">
+        <span class="ask-bar-label">🙋 Ask Professor Byte</span>
         <div class="ask-row">
-          <input
-            type="text"
-            id="askInput"
-            class="ask-input"
-            placeholder="Ask anything about this topic…"
-            maxlength="200"
-            autocomplete="off"
-            tabindex="3"
-          />
+          <input type="text" id="askInput" class="ask-input"
+            placeholder="Ask a follow-up question about this topic…"
+            maxlength="200" autocomplete="off" tabindex="3"/>
           <button class="ask-btn" id="askBtn" tabindex="4">Ask ➤</button>
         </div>
         <div class="ask-chips" id="askChips"></div>
       </div>
+      <!-- live follow-up status -->
+      <div class="ask-status" id="askStatus" style="display:none">
+        <div class="ask-status-dot"></div>
+        <span id="askStatusText">Professor Byte is answering…</span>
+      </div>
     </div>
+
   </section>
 
-  <!-- RIGHT PANEL -->
-  <aside class="right-panel" id="rightPanel">
-    <div class="panel-card fact-card" id="factCard" style="display:none">
-      <div class="card-header">🤯 Fun Fact</div>
-      <div class="fact-text" id="factText"></div>
-    </div>
-
-    <div class="panel-card glossary-card" id="glossaryCard" style="display:none">
-      <div class="card-header">📖 Key Terms</div>
-      <div class="glossary-list" id="glossaryList"></div>
-    </div>
-
-    <div class="panel-card quiz-card" id="quizCard" style="display:none">
-      <div class="card-header">🧠 Pop Quiz</div>
-      <div class="quiz-progress-bar">
-        <div class="quiz-prog-fill" id="quizProgFill"></div>
+  <!-- ── RIGHT SIDEBAR ─────────────────────────────────────── -->
+  <aside class="sidebar right-sidebar" id="rightSidebar">
+    <div class="sidebar-header rs-header">
+      <!-- Tabs -->
+      <div class="rs-tabs">
+        <button class="rs-tab active" data-tab="fact">🤯 Fact</button>
+        <button class="rs-tab" data-tab="terms">📖 Terms</button>
+        <button class="rs-tab" data-tab="quiz">🧠 Quiz</button>
       </div>
-      <div class="quiz-q-count" id="quizQCount">Question 1 / 3</div>
-      <div class="quiz-question" id="quizQuestion"></div>
-      <div class="quiz-options" id="quizOptions"></div>
-      <div class="quiz-explanation" id="quizExplanation" style="display:none"></div>
-      <div class="quiz-controls">
-        <button class="quiz-btn" id="quizNextBtn" style="display:none">Next ➤</button>
+      <button class="collapse-btn" id="rightCloseBtn">✕</button>
+    </div>
+
+    <!-- Tab panels -->
+    <div class="rs-panel active" id="panel-fact">
+      <div class="rs-empty" id="factEmpty">Complete a lesson to see the fun fact! 🤯</div>
+      <div class="fact-text" id="factText" style="display:none"></div>
+    </div>
+
+    <div class="rs-panel" id="panel-terms">
+      <div class="rs-empty" id="termsEmpty">Complete a lesson to see key terms! 📖</div>
+      <div class="glossary-list" id="glossaryList" style="display:none"></div>
+    </div>
+
+    <div class="rs-panel" id="panel-quiz">
+      <div class="rs-empty" id="quizEmpty">Complete a lesson to unlock the quiz! 🧠</div>
+
+      <!-- Quiz -->
+      <div id="quizInner" style="display:none">
+        <div class="quiz-progress-bar">
+          <div class="quiz-prog-fill" id="quizProgFill"></div>
+        </div>
+        <div class="quiz-q-count" id="quizQCount">Question 1 / 3</div>
+        <div class="quiz-question" id="quizQuestion"></div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div class="quiz-explanation" id="quizExplanation" style="display:none"></div>
+        <div class="quiz-controls">
+          <button class="quiz-btn" id="quizNextBtn" style="display:none">Next ➤</button>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="resultInner" style="display:none">
+        <div class="result-stars" id="resultStars"></div>
+        <div class="result-score" id="resultScore"></div>
+        <div class="result-msg" id="resultMsg"></div>
+        <div class="result-xp" id="resultXP"></div>
+        <button class="quiz-btn btn-retry" id="retryQuizBtn">🔄 Retry Quiz</button>
       </div>
     </div>
 
-    <div class="panel-card result-card" id="resultCard" style="display:none">
-      <div class="result-stars" id="resultStars"></div>
-      <div class="result-score" id="resultScore"></div>
-      <div class="result-msg" id="resultMsg"></div>
-      <div class="result-xp" id="resultXP"></div>
-      <button class="quiz-btn btn-retry" id="retryQuizBtn">🔄 Retry Quiz</button>
-    </div>
-
+    <!-- Achievement toasts live here -->
     <div class="achievement-area" id="achievementArea"></div>
   </aside>
+
 </main>
 
 <!-- ══ MODALS ════════════════════════════════════════════════ -->
@@ -305,16 +292,14 @@
     <div class="lu-title-name" id="luTitleName"></div>
     <div class="lu-xp-earned" id="luXpEarned"></div>
     <p class="lu-desc">You're on fire! Keep learning to unlock more badges.</p>
-    <button class="btn-primary" id="luCloseBtn">⚡ Let's Keep Going!</button>
+    <button class="btn-primary" id="luCloseBtn">⚡ Keep Going!</button>
   </div>
 </div>
-
-<div class="xp-popup" id="xpPopup" style="display:none">+<span id="xpPopupVal">0</span> XP</div>
 
 <div class="modal-overlay" id="checkpointOverlay">
   <div class="modal checkpoint-modal">
     <div class="cp-icon">🤔</div>
-    <div class="cp-label">Checkpoint!</div>
+    <div class="cp-label">CHECKPOINT</div>
     <div class="cp-question" id="cpQuestion"></div>
     <button class="cp-hint-btn" id="cpHintBtn">💡 Show Hint</button>
     <div class="cp-hint" id="cpHint" style="display:none"></div>
@@ -340,7 +325,7 @@
       <button class="toggle-btn" id="soundToggle">🔊 ON</button>
     </div>
     <div class="setting-row">
-      <label>Chalk Color Theme</label>
+      <label>Chalk Theme</label>
       <div class="color-opts">
         <button class="color-opt active" data-theme="classic">Classic</button>
         <button class="color-opt" data-theme="neon" style="background:#0d1b2a;color:#00ff88">Neon</button>
@@ -352,8 +337,8 @@
       <button class="btn-change-name" id="changeNameBtn">✏️ Change Name</button>
     </div>
     <div class="setting-row danger-row">
-      <label>Reset All Progress</label>
-      <button class="btn-danger" id="resetProgressBtn">⚠️ Reset</button>
+      <label>Reset Progress</label>
+      <button class="btn-danger" id="resetProgressBtn">⚠️ Reset All</button>
     </div>
   </div>
 </div>
@@ -368,8 +353,19 @@
   </div>
 </div>
 
-<script src="sfx.js"></script>
-  <script src="whiteboard.js"></script>
+<!-- XP float popup -->
+<div class="xp-popup" id="xpPopup" style="display:none">+<span id="xpPopupVal">0</span> XP</div>
+
+<!-- Game notification popup (combo, streak, milestone) -->
+<div class="game-notif" id="gameNotif" style="display:none">
+  <div class="gn-icon" id="gnIcon">🔥</div>
+  <div class="gn-body">
+    <div class="gn-title" id="gnTitle">ON FIRE!</div>
+    <div class="gn-sub" id="gnSub">3 correct in a row</div>
+  </div>
+</div>
+
+<script src="whiteboard.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
