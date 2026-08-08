@@ -1,1145 +1,955 @@
 /* ═══════════════════════════════════════════════════════════════
-   app.js  —  SlateMind v2.1  |  Full game engine
-   All bugs fixed, all features wired
+   SlateMind v2.2 — app.js
+   Fixes: follow-up continuity, right sidebar tabs, fullscreen,
+          bottom ask bar, rich notifications, sounds
    ═══════════════════════════════════════════════════════════════ */
 'use strict';
 
-/* ══════════════════════════════════════════════════════════════
-   1. CONFIG
-══════════════════════════════════════════════════════════════ */
+/* ══ 1. CONFIG ═════════════════════════════════════════════════ */
 const LEVELS = [
-  { level:1,  title:'Rookie',           xpNeeded:0    },
-  { level:2,  title:'Curious Learner',  xpNeeded:150  },
-  { level:3,  title:'Knowledge Seeker', xpNeeded:350  },
-  { level:4,  title:'Smart Cookie',     xpNeeded:600  },
-  { level:5,  title:'Brain Explorer',   xpNeeded:950  },
-  { level:6,  title:'Concept Master',   xpNeeded:1400 },
-  { level:7,  title:'Tech Wizard',      xpNeeded:2000 },
-  { level:8,  title:'Scholar',          xpNeeded:2800 },
-  { level:9,  title:'Grand Scholar',    xpNeeded:3800 },
-  { level:10, title:'Professor Byte',   xpNeeded:5000 },
+  {level:1, title:'Rookie',          xpNeeded:0   },
+  {level:2, title:'Curious Learner', xpNeeded:150 },
+  {level:3, title:'Knowledge Seeker',xpNeeded:350 },
+  {level:4, title:'Smart Cookie',    xpNeeded:600 },
+  {level:5, title:'Brain Explorer',  xpNeeded:950 },
+  {level:6, title:'Concept Master',  xpNeeded:1400},
+  {level:7, title:'Tech Wizard',     xpNeeded:2000},
+  {level:8, title:'Scholar',         xpNeeded:2800},
+  {level:9, title:'Grand Scholar',   xpNeeded:3800},
+  {level:10,title:'Professor Byte',  xpNeeded:5000},
 ];
 
 const BADGES = [
-  { id:'first_lesson',  icon:'🎓', name:'First Step',     desc:'Complete your first lesson',       check:s=>s.lessonsCompleted>=1  },
-  { id:'lesson_5',      icon:'📚', name:'Bookworm',        desc:'Complete 5 lessons',               check:s=>s.lessonsCompleted>=5  },
-  { id:'lesson_10',     icon:'🔬', name:'Lab Rat',         desc:'Complete 10 lessons',              check:s=>s.lessonsCompleted>=10 },
-  { id:'lesson_25',     icon:'🧠', name:'Big Brain',       desc:'Complete 25 lessons',              check:s=>s.lessonsCompleted>=25 },
-  { id:'quiz_perfect',  icon:'💯', name:'Perfect Score',   desc:'Score 100% on a quiz',             check:s=>s.perfectQuizzes>=1    },
-  { id:'quiz_5',        icon:'🎯', name:'Quiz Master',     desc:'Pass 5 quizzes',                   check:s=>s.quizzesPassed>=5     },
-  { id:'streak_3',      icon:'🔥', name:'On Fire',         desc:'3-day learning streak',            check:s=>s.maxStreak>=3         },
-  { id:'streak_7',      icon:'🌟', name:'Week Warrior',    desc:'7-day learning streak',            check:s=>s.maxStreak>=7         },
-  { id:'xp_500',        icon:'⚡', name:'Power Up',        desc:'Earn 500 XP',                      check:s=>s.totalXP>=500         },
-  { id:'xp_2000',       icon:'💎', name:'XP Elite',        desc:'Earn 2000 XP',                     check:s=>s.totalXP>=2000        },
-  { id:'speed_demon',   icon:'🚀', name:'Speed Demon',     desc:'Watch 3 lessons at fast speed',    check:s=>s.fastLessons>=3       },
-  { id:'daily_champ',   icon:'🏆', name:'Daily Champion',  desc:'Complete the daily challenge',     check:s=>s.dailyChallenges>=1   },
-  { id:'asker',         icon:'🙋', name:'Curious George',  desc:'Ask 10 follow-up questions',       check:s=>s.followUps>=10        },
-  { id:'level_5',       icon:'👑', name:'Rising Star',     desc:'Reach Level 5',                    check:s=>s.level>=5             },
-  { id:'level_max',     icon:'🎖️', name:'Prof. Byte Jr.', desc:'Reach max level (10)',              check:s=>s.level>=10            },
-  { id:'night_owl',     icon:'🦉', name:'Night Owl',       desc:'Study after 10 PM',                check:s=>s.nightStudy>=1        },
+  {id:'first_lesson', icon:'🎓',name:'First Step',   desc:'Complete your first lesson',    check:s=>s.lessonsCompleted>=1 },
+  {id:'lesson_5',     icon:'📚',name:'Bookworm',      desc:'Complete 5 lessons',            check:s=>s.lessonsCompleted>=5 },
+  {id:'lesson_10',    icon:'🔬',name:'Lab Rat',       desc:'Complete 10 lessons',           check:s=>s.lessonsCompleted>=10},
+  {id:'lesson_25',    icon:'🧠',name:'Big Brain',     desc:'Complete 25 lessons',           check:s=>s.lessonsCompleted>=25},
+  {id:'quiz_perfect', icon:'💯',name:'Perfect Score', desc:'Score 100% on a quiz',          check:s=>s.perfectQuizzes>=1  },
+  {id:'quiz_5',       icon:'🎯',name:'Quiz Master',   desc:'Pass 5 quizzes',                check:s=>s.quizzesPassed>=5   },
+  {id:'streak_3',     icon:'🔥',name:'On Fire',       desc:'3-day streak',                  check:s=>s.maxStreak>=3       },
+  {id:'streak_7',     icon:'🌟',name:'Week Warrior',  desc:'7-day streak',                  check:s=>s.maxStreak>=7       },
+  {id:'xp_500',       icon:'⚡',name:'Power Up',      desc:'Earn 500 XP',                   check:s=>s.totalXP>=500       },
+  {id:'xp_2000',      icon:'💎',name:'XP Elite',      desc:'Earn 2000 XP',                  check:s=>s.totalXP>=2000      },
+  {id:'speed_demon',  icon:'🚀',name:'Speed Demon',   desc:'3 lessons at fast speed',       check:s=>s.fastLessons>=3     },
+  {id:'daily_champ',  icon:'🏆',name:'Daily Champ',   desc:'Complete daily challenge',      check:s=>s.dailyChallenges>=1 },
+  {id:'asker',        icon:'🙋',name:'Curious George',desc:'Ask 10 follow-ups',             check:s=>s.followUps>=10      },
+  {id:'combo_king',   icon:'👑',name:'Combo King',    desc:'3 quiz answers in a row',       check:s=>s.maxCombo>=3        },
+  {id:'level_5',      icon:'🔑',name:'Rising Star',   desc:'Reach Level 5',                 check:s=>s.level>=5           },
+  {id:'level_max',    icon:'🎖️',name:'Prof. Byte Jr.',desc:'Reach max level',               check:s=>s.level>=10          },
+  {id:'night_owl',    icon:'🦉',name:'Night Owl',     desc:'Study after 10 PM',             check:s=>s.nightStudy>=1      },
 ];
 
 const DAILY_CHALLENGES = [
   'The Water Cycle','How Black Holes Form','Pythagoras Theorem',
-  'The Human Immune System','How Computers Work','Climate Change and Global Warming',
+  'The Human Immune System','How Computers Work','Climate Change',
   'Evolution by Natural Selection','Nuclear Fission vs Fusion',
   'Machine Learning Basics','The French Revolution',
   'How Vaccines Work','Quantum Physics Introduction',
-  'The Carbon Cycle',"India's Freedom Struggle",'DNA Replication',
   "Newton's Three Laws of Motion",'Electricity and Magnetism',
-  'The Solar System','Chemical Bonding','Respiration in Humans',
+  'The Solar System','Chemical Bonding','DNA Replication',
+  'Ohm\'s Law','Photosynthesis','Respiration in Humans',
 ];
 
 const FOLLOW_UP_CHIPS = [
   'Explain that more simply',
   'Give me a real-world example',
-  'How does this work in practice?',
   'Why is this important?',
-  'What are common mistakes to avoid?',
-  'How does this connect to daily life?',
+  'What are common mistakes?',
+  'Connect this to daily life',
+  'What comes next in this topic?',
 ];
 
-const RESULT_MESSAGES = {
-  3:['🔥 Flawless! You aced it!','🌟 Perfect score! Brilliant!','💯 Outstanding work!'],
-  2:['👍 Great job! Almost perfect!','📚 Solid understanding!','⚡ Sharp thinking!'],
-  1:['🙂 Good start! Review and retry!','📖 Keep at it — you\'re getting there!','💪 Practice makes perfect!'],
-  0:['😅 Time to review the lesson!','🔄 Don\'t give up — retry and conquer!','📝 Let\'s go over this again!'],
-};
-
-const LOADING_MESSAGES = [
-  'Professor Byte is sharpening the chalk…',
-  'Organising thoughts on the blackboard…',
-  'Preparing a comprehensive lesson…',
-  'Summoning knowledge from the cosmos…',
-  'Calculating the perfect explanation…',
-  'Brewing a brilliant lesson plan…',
-  'Consulting the ancient scrolls of knowledge…',
+const LOADING_MSGS = [
+  'Sharpening the chalk…','Preparing your lesson…',
+  'Summoning knowledge…','Writing the plan…',
+  'Consulting the scrolls…','Organising the board…',
 ];
 
-/* ══════════════════════════════════════════════════════════════
-   2. STATE
-══════════════════════════════════════════════════════════════ */
-const DEFAULT_STATE = {
+/* ══ 2. STATE ══════════════════════════════════════════════════ */
+const DEF = {
   playerName:'Student', totalXP:0, level:1,
   lessonsCompleted:0, topicsExplored:0,
   perfectQuizzes:0, quizzesPassed:0,
-  maxStreak:0, currentStreak:0,
-  lastStudyDate:null,
+  maxStreak:0, currentStreak:0, lastStudyDate:null,
   fastLessons:0, dailyChallenges:0, followUps:0, nightStudy:0,
   earnedBadges:[], lessonHistory:[],
-  quizCorrect:0, quizTotal:0,
+  quizCorrect:0, quizTotal:0, maxCombo:0,
   soundOn:true, writeSpeed:'normal',
   hasOnboarded:false,
   dailyChallengeDate:null, dailyChallengeDone:false,
 };
 
 let STATE         = {};
-let interactionId = null;
+let interactionId = null;   // preserved across follow-ups
 let currentQuiz   = [];
-let quizIndex     = 0;        // 0-based internally
+let quizIndex     = 0;
 let quizScore     = 0;
-let currentLesson = null;
+let quizCombo     = 0;      // consecutive correct answers
 let lastTopic     = '';
 let wb            = null;
-let _audioCtx     = null;     // lazy-init AudioContext
+let _audioCtx     = null;
 
-/* ══════════════════════════════════════════════════════════════
-   3. PERSISTENCE
-══════════════════════════════════════════════════════════════ */
-function loadState() {
-  try {
-    const raw = localStorage.getItem('pb_state_v2');
-    STATE = raw ? { ...DEFAULT_STATE, ...JSON.parse(raw) } : { ...DEFAULT_STATE };
-  } catch { STATE = { ...DEFAULT_STATE }; }
-}
-function saveState() {
-  try { localStorage.setItem('pb_state_v2', JSON.stringify(STATE)); } catch {}
+/* ══ 3. PERSISTENCE ════════════════════════════════════════════ */
+function load()  { try { const r=localStorage.getItem('pb_v2'); STATE=r?{...DEF,...JSON.parse(r)}:{...DEF}; } catch { STATE={...DEF}; } }
+function save()  { try { localStorage.setItem('pb_v2',JSON.stringify(STATE)); } catch {} }
+
+/* ══ 4. XP & LEVELS ════════════════════════════════════════════ */
+function getLvl(xp) {
+  let cur=LEVELS[0], nxt=LEVELS[1];
+  for (let i=LEVELS.length-1;i>=0;i--) {
+    if (xp>=LEVELS[i].xpNeeded) { cur=LEVELS[i]; nxt=LEVELS[i+1]||null; break; }
+  }
+  return {cur,nxt};
 }
 
-/* ══════════════════════════════════════════════════════════════
-   4. XP & LEVEL ENGINE
-══════════════════════════════════════════════════════════════ */
-function getLevelInfo(xp) {
-  let current = LEVELS[0], next = LEVELS[1];
-  for (let i = LEVELS.length - 1; i >= 0; i--) {
-    if (xp >= LEVELS[i].xpNeeded) {
-      current = LEVELS[i];
-      next    = LEVELS[i + 1] || null;
+function awardXP(amount, reason='') {
+  if (!amount||amount<=0) return;
+  const prevLv = STATE.level;
+  STATE.totalXP += amount;
+  const {cur} = getLvl(STATE.totalXP);
+  STATE.level = cur.level;
+  updateHUD();
+  showXPPopup(amount);
+  save();
+  // check milestones
+  checkMilestones(STATE.totalXP - amount, STATE.totalXP);
+  if (STATE.level > prevLv) setTimeout(()=>showLevelUp(cur, amount), 900);
+  checkBadges();
+}
+
+function getProgress() {
+  const {cur,nxt} = getLvl(STATE.totalXP);
+  if (!nxt) return {pct:100,cur:STATE.totalXP,needed:STATE.totalXP};
+  const base=cur.xpNeeded, range=nxt.xpNeeded-base, done=STATE.totalXP-base;
+  return {pct:Math.min(100,(done/range)*100), cur:done, needed:range};
+}
+
+function checkMilestones(before, after) {
+  const milestones = [100,250,500,1000,2000,5000];
+  for (const m of milestones) {
+    if (before < m && after >= m) {
+      showGameNotif('✨','XP MILESTONE',`${m} XP reached!`,'gold',2000);
       break;
     }
   }
-  return { current, next };
 }
 
-function awardXP(amount) {
-  if (!amount || amount <= 0) return;
-  const prevLevel = STATE.level;
-  STATE.totalXP  += amount;
-  const { current } = getLevelInfo(STATE.totalXP);
-  STATE.level = current.level;
-  updateHUD();
-  showXPPopup(amount);
-  saveState();
-  if (STATE.level > prevLevel) {
-    setTimeout(() => showLevelUp(current, amount), 900);
-  }
-  checkBadges();
-}
-
-function getXPProgress() {
-  const { current, next } = getLevelInfo(STATE.totalXP);
-  if (!next) return { pct:100, current:STATE.totalXP, needed:STATE.totalXP };
-  const base  = current.xpNeeded;
-  const range = next.xpNeeded - base;
-  const done  = STATE.totalXP - base;
-  return { pct: Math.min(100,(done/range)*100), current:done, needed:range };
-}
-
-/* ══════════════════════════════════════════════════════════════
-   5. STREAK ENGINE  (fixed implementation)
-══════════════════════════════════════════════════════════════ */
+/* ══ 5. STREAK ════════════════════════════════════════════════ */
 function updateStreak() {
-  const today     = new Date().toDateString();
-  const lastVisit = STATE.lastStudyDate;
-  if (lastVisit === today) return; // already counted today
-
-  const yesterday = new Date(Date.now() - 86400000).toDateString();
-  STATE.currentStreak = (lastVisit === yesterday) ? STATE.currentStreak + 1 : 1;
+  const today = new Date().toDateString();
+  if (STATE.lastStudyDate === today) return;
+  const yest = new Date(Date.now()-86400000).toDateString();
+  const prev = STATE.currentStreak;
+  STATE.currentStreak = (STATE.lastStudyDate===yest) ? STATE.currentStreak+1 : 1;
   if (STATE.currentStreak > STATE.maxStreak) STATE.maxStreak = STATE.currentStreak;
   STATE.lastStudyDate = today;
-
-  // Night owl
-  const hour = new Date().getHours();
-  if (hour >= 22 || hour < 4) STATE.nightStudy++;
-
-  saveState();
+  if (new Date().getHours()>=22) STATE.nightStudy++;
+  save();
+  // Notify if streak increased
+  if (STATE.currentStreak > prev && STATE.currentStreak > 1) {
+    setTimeout(()=>showGameNotif('🔥','STREAK!',`${STATE.currentStreak} days in a row!`,'orange',2200),800);
+  }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   6. BADGE ENGINE
-══════════════════════════════════════════════════════════════ */
+/* ══ 6. BADGES ════════════════════════════════════════════════ */
 function checkBadges() {
-  BADGES.forEach(badge => {
-    if (STATE.earnedBadges.includes(badge.id)) return;
-    if (badge.check(STATE)) {
-      STATE.earnedBadges.push(badge.id);
-      saveState();
-      showBadgeToast(badge);
+  BADGES.forEach(b=>{
+    if (STATE.earnedBadges.includes(b.id)) return;
+    if (b.check(STATE)) {
+      STATE.earnedBadges.push(b.id);
+      save();
+      showBadgeToast(b);
     }
   });
 }
 
-function showBadgeToast(badge) {
+function showBadgeToast(b) {
   const area = el('achievementArea');
   if (!area) return;
-  const toast = document.createElement('div');
-  toast.className = 'achievement-toast';
-  toast.innerHTML = `
-    <div class="toast-icon">${badge.icon}</div>
+  const t = document.createElement('div');
+  t.className='achievement-toast';
+  t.innerHTML=`<div class="toast-icon">${b.icon}</div>
     <div class="toast-info">
       <div class="toast-title">🏅 Badge Unlocked!</div>
-      <div class="toast-desc">${badge.name} — ${badge.desc}</div>
+      <div class="toast-desc">${b.name} — ${b.desc}</div>
     </div>`;
-  area.prepend(toast);
-  playSound('badge');
-  setTimeout(() => toast.remove(), 6000);
+  area.prepend(t);
+  sound('badge');
+  setTimeout(()=>t.remove(),6000);
+  // Switch to quiz tab to show achievement area
+  switchRSTab('fact');
 }
 
-/* ══════════════════════════════════════════════════════════════
-   7. HUD UPDATE
-══════════════════════════════════════════════════════════════ */
+/* ══ 7. HUD ════════════════════════════════════════════════════ */
 function updateHUD() {
-  const { current, next } = getLevelInfo(STATE.totalXP);
-  const prog = getXPProgress();
-
+  const {cur,nxt}=getLvl(STATE.totalXP);
+  const p=getProgress();
   el('playerNameDisplay').textContent = STATE.playerName;
-  el('playerLevel').textContent       = `Lv ${current.level}`;
-  el('levelTitle').textContent        = current.title;
-  el('xpBarFill').style.width         = prog.pct + '%';
-  el('xpBarLabel').textContent        = next
-    ? `${prog.current} / ${prog.needed} XP`
-    : 'MAX LEVEL ⭐';
-
+  el('playerLevel').textContent       = `Lv ${cur.level}`;
+  el('levelTitle').textContent        = cur.title;
+  el('xpBarFill').style.width         = p.pct+'%';
+  el('xpBarLabel').textContent        = nxt ? `${p.cur} / ${p.needed} XP` : 'MAX ⭐';
   el('totalXP').textContent      = STATE.totalXP;
   el('streakCount').textContent  = STATE.currentStreak;
   el('lessonsCount').textContent = STATE.lessonsCompleted;
-  el('topicsCount').textContent  = STATE.topicsExplored || 0;
-
-  el('streakChip').classList.toggle('active', STATE.currentStreak >= 3);
+  el('topicsCount').textContent  = STATE.topicsExplored||0;
+  el('streakChip').classList.toggle('active', STATE.currentStreak>=3);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   8. XP POPUP
-══════════════════════════════════════════════════════════════ */
+/* ══ 8. NOTIFICATIONS ══════════════════════════════════════════ */
+let _notifTimer = null;
+function showGameNotif(icon, title, sub, color='gold', duration=2500) {
+  const n = el('gameNotif');
+  el('gnIcon').textContent  = icon;
+  el('gnTitle').textContent = title;
+  el('gnSub').textContent   = sub;
+
+  const colors = {
+    gold:  ['rgba(244,197,66,.35)','var(--xp-gold)'],
+    orange:['rgba(255,100,0,.35)', '#ff6600'],
+    green: ['rgba(0,229,160,.3)',  'var(--accent)'],
+    purple:['rgba(124,58,237,.35)','#a78bfa'],
+    red:   ['rgba(239,68,68,.35)', '#ef4444'],
+  };
+  const [bc, tc] = colors[color]||colors.gold;
+  n.style.borderColor = bc;
+  el('gnTitle').style.color = tc;
+
+  n.style.display   = 'flex';
+  n.style.animation = 'none';
+  void n.offsetWidth;
+  n.style.animation = 'notifIn .4s cubic-bezier(.34,1.56,.64,1)';
+
+  clearTimeout(_notifTimer);
+  _notifTimer = setTimeout(()=>{
+    n.style.animation='notifOut .3s ease forwards';
+    setTimeout(()=>{ n.style.display='none'; }, 320);
+  }, duration);
+}
+
 function showXPPopup(amount) {
-  playSound('xp');
-  const popup = el('xpPopup');
+  const p = el('xpPopup');
   el('xpPopupVal').textContent = amount;
-  popup.style.display  = 'block';
-  popup.style.left     = (window.innerWidth / 2 - 50) + 'px';
-  popup.style.top      = (window.innerHeight / 2 - 40) + 'px';
-  popup.style.animation = 'none';
-  void popup.offsetWidth;
-  popup.style.animation = 'xpFloat 1.3s ease-out forwards';
-  setTimeout(() => { popup.style.display = 'none'; }, 1400);
+  p.style.display   = 'block';
+  p.style.left      = (window.innerWidth/2-50)+'px';
+  p.style.top       = (window.innerHeight/2-40)+'px';
+  p.style.animation = 'none';
+  void p.offsetWidth;
+  p.style.animation = 'xpFloat 1.3s ease-out forwards';
+  setTimeout(()=>{ p.style.display='none'; }, 1400);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   9. LEVEL UP MODAL  (now shows XP earned)
-══════════════════════════════════════════════════════════════ */
-function showLevelUp(lvlInfo, xpEarned) {
-  el('luLevel').textContent    = `Level ${lvlInfo.level}`;
-  el('luTitleName').textContent = lvlInfo.title;
-  el('luXpEarned').textContent  = xpEarned ? `+${xpEarned} XP earned this lesson!` : '';
+function comboFlash() {
+  const f = document.createElement('div');
+  f.className='combo-flash';
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(), 350);
+}
+
+/* ══ 9. LEVEL UP ═══════════════════════════════════════════════ */
+function showLevelUp(lvl, xp) {
+  el('luLevel').textContent     = `Level ${lvl.level}`;
+  el('luTitleName').textContent = lvl.title;
+  el('luXpEarned').textContent  = xp ? `+${xp} XP earned!` : '';
   openModal('levelUpOverlay');
-  playSound('levelup');
-  updateHUD();
+  sound('levelup');
+  // Shake the board frame for drama
+  el('boardFrame').style.animation='screenShake .4s ease';
+  setTimeout(()=>el('boardFrame').style.animation='',400);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   10. LESSON ENGINE
-══════════════════════════════════════════════════════════════ */
-async function startLesson(topic, isDaily = false) {
-  topic = (topic || '').trim();
+/* ══ 10. LESSON ════════════════════════════════════════════════ */
+async function startLesson(topic, isDaily=false) {
+  topic=(topic||'').trim();
   if (!topic) {
     el('topicInput').focus();
     el('topicInput').classList.add('error');
-    el('topicError').style.display = 'block';
-    setTimeout(() => {
-      el('topicInput').classList.remove('error');
-      el('topicError').style.display = 'none';
-    }, 2500);
+    el('topicError').style.display='block';
+    setTimeout(()=>{ el('topicInput').classList.remove('error'); el('topicError').style.display='none'; },2500);
     return;
   }
-
   lastTopic = topic;
+  // Reset follow-up state for new lesson
+  interactionId = null;
+
   hideError();
   setUIState('loading');
-
   el('boardIdle').style.display    = 'none';
   el('boardLoading').style.display = 'flex';
   el('boardError').style.display   = 'none';
-  el('loadingText').textContent    = LOADING_MESSAGES[Math.floor(Math.random()*LOADING_MESSAGES.length)];
+  el('loadingText').textContent    = LOADING_MSGS[Math.floor(Math.random()*LOADING_MSGS.length)];
 
   try {
-    const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 30000);
-
-    const res = await fetch('/api/lesson', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ topic }),
-      signal:  controller.signal,
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),30000);
+    const res = await fetch('/api/lesson',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic}),
+      signal:ctrl.signal,
     });
-    clearTimeout(timeout);
-
+    clearTimeout(t);
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
-      throw new Error(err.error || `Server error ${res.status}`);
+      const e=await res.json().catch(()=>({error:`Error ${res.status}`}));
+      throw new Error(e.error||`Server error ${res.status}`);
     }
+    const data = await res.json();
+    // Store interactionId — this is what enables follow-ups
+    interactionId = data.interactionId || null;
 
-    const data     = await res.json();
-    interactionId  = data.interactionId;
-    currentLesson  = { topic, data };
-
-    el('boardLoading').style.display = 'none';
-    showLessonMeta(topic, data);
+    el('boardLoading').style.display='none';
+    showLessonMeta(topic,data);
     wb.clear();
     wb.setSpeed(STATE.writeSpeed);
-
-    if (STATE.writeSpeed === 'fast' || STATE.writeSpeed === 'instant') STATE.fastLessons++;
+    if (STATE.writeSpeed==='fast'||STATE.writeSpeed==='instant') STATE.fastLessons++;
 
     setUIState('writing');
+    sound('start');
+    showGameNotif('📖','LESSON STARTED',`Topic: ${topic.slice(0,30)}`,'green',1800);
 
-    await wb.renderLesson(data.blocks || [], {
-      onAllDone: () => onLessonComplete(data, topic, isDaily),
+    await wb.renderLesson(data.blocks||[], {
+      onAllDone: ()=>onLessonComplete(data,topic,isDaily),
     });
 
-  } catch (err) {
-    el('boardLoading').style.display = 'none';
-    showError(err.name === 'AbortError'
+  } catch(err) {
+    el('boardLoading').style.display='none';
+    showError(err.name==='AbortError'
       ? 'Request timed out — please try again.'
-      : (err.message || 'Could not connect to Professor Byte.'));
+      : (err.message||'Could not reach Professor Byte.'));
     setUIState('idle');
-    console.error('Lesson error:', err);
+    sound('error');
   }
 }
 
-function onLessonComplete(data, topic, isDaily) {
+function onLessonComplete(data,topic,isDaily) {
   STATE.lessonsCompleted++;
-  STATE.topicsExplored = (STATE.topicsExplored || 0) + 1;
-  updateStreak(); // call once, on lesson completion only
-
+  STATE.topicsExplored=(STATE.topicsExplored||0)+1;
+  updateStreak();
   if (isDaily) {
     STATE.dailyChallenges++;
-    STATE.dailyChallengeDone = true;
-    STATE.dailyChallengeDate = new Date().toDateString();
-    setupDailyChallenge(); // refresh button state
+    STATE.dailyChallengeDone=true;
+    STATE.dailyChallengeDate=new Date().toDateString();
+    setupDailyChallenge();
   }
-  saveState();
+  save();
 
-  const xp = data.xpReward || 100;
-  awardXP(xp);
-  addToHistory(topic, data);
-  showFactCard(data.funFact);
-  showGlossary(data.keyTerms);
-  showQuiz(data.quiz);
-  el('askDock').style.display = 'block';
+  const xp=data.xpReward||80;
+  awardXP(xp,'lesson');
+
+  addToHistory(topic,data);
+  showFactPanel(data.funFact);
+  showTermsPanel(data.keyTerms);
+  setupQuizPanel(data.quiz);
+
+  // Show ask bar now that lesson is done
+  el('askBar').style.display='block';
   populateAskChips();
   setUIState('done');
   checkBadges();
-  playSound('complete');
-}
+  sound('complete');
+  showGameNotif('🎉','LESSON COMPLETE',`+${xp} XP earned!`,'gold',2500);
 
-function showLessonMeta(topic, data) {
-  el('metaTopic').textContent  = topic;
-  const diff   = data.difficulty || 'Intermediate';
-  const diffEl = el('metaDiff');
-  diffEl.textContent = diff;
-  diffEl.className   = `meta-diff diff-${diff}`;
-  el('metaXP').textContent   = `+${data.xpReward || 100} XP`;
-  el('metaTerms').textContent = data.keyTerms?.length
-    ? '📌 ' + data.keyTerms.slice(0,3).join(', ') : '';
-  el('lessonMeta').style.display = 'flex';
-}
-
-/* ══════════════════════════════════════════════════════════════
-   11. FOLLOW-UP
-══════════════════════════════════════════════════════════════ */
-async function askFollowUp(question) {
-  if (!question?.trim() || !interactionId) return;
-  question = question.trim();
-  el('askBtn').disabled  = true;
-  el('askInput').value   = '';
-  STATE.followUps++;
-  saveState();
-  checkBadges();
-  setUIState('writing');
-
-  try {
-    const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 30000);
-
-    const res = await fetch('/api/ask', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ question, interactionId }),
-      signal:  controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!res.ok) throw new Error(`Server error ${res.status}`);
-
-    const data    = await res.json();
-    interactionId = data.interactionId;
-
-    await wb.appendBlocks(data.blocks || [], {
-      onAllDone: () => {
-        setUIState('done');
-        if (data.xpReward) awardXP(data.xpReward);
-      },
-    });
-  } catch (err) {
-    console.error('Ask error:', err);
-    setUIState('done');
-    showProfMessage('⚠️ Couldn\'t get an answer — please try again.');
-  } finally {
-    el('askBtn').disabled = false;
+  // Prompt right sidebar if collapsed
+  if (document.getElementById('rightSidebar').classList.contains('collapsed')) {
+    el('rightOpenHudBtn').style.display='flex';
+    setTimeout(()=>{
+      showGameNotif('📋','NOTES READY','Fun fact + quiz unlocked!','purple',2000);
+    },1000);
+  } else {
+    // Auto-switch to quiz tab after lesson
+    setTimeout(()=>switchRSTab('quiz'),600);
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   12. QUIZ ENGINE  (counter fully wired)
-══════════════════════════════════════════════════════════════ */
-function showQuiz(quiz) {
-  if (!quiz || !quiz.length) return;
+function showLessonMeta(topic,data) {
+  el('metaTopic').textContent = topic;
+  const diff=data.difficulty||'Intermediate';
+  el('metaDiff').textContent  = diff;
+  el('metaDiff').className    = `meta-diff diff-${diff}`;
+  el('metaXP').textContent    = `+${data.xpReward||80} XP`;
+  el('metaTerms').textContent = data.keyTerms?.length ? '📌 '+data.keyTerms.slice(0,3).join(', '):'';
+  el('lessonMeta').style.display='flex';
+}
+
+/* ══ 11. FOLLOW-UP (fixed) ═════════════════════════════════════ */
+async function askFollowUp(question) {
+  question=(question||'').trim();
+  if (!question) return;
+
+  // Guard: must have interactionId from current lesson
+  if (!interactionId) {
+    showProfMsg('⚠️ Start a lesson first before asking follow-up questions.');
+    return;
+  }
+
+  el('askBtn').disabled   = true;
+  el('askInput').value    = '';
+  el('askInput').disabled = true;
+  showAskStatus(true, 'Professor Byte is answering…');
+
+  STATE.followUps++;
+  save();
+  checkBadges();
+
+  try {
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),25000);
+    const res = await fetch('/api/ask',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question, interactionId}),
+      signal:ctrl.signal,
+    });
+    clearTimeout(t);
+
+    if (!res.ok) {
+      const e=await res.json().catch(()=>({error:`Error ${res.status}`}));
+      throw new Error(e.error||`Error ${res.status}`);
+    }
+
+    const data = await res.json();
+    // Update interactionId to maintain conversation context
+    interactionId = data.interactionId || interactionId;
+
+    sound('start');
+    showAskStatus(true,'Writing on the board…');
+
+    // appendBlocks continues from where the lesson left off
+    await wb.appendBlocks(data.blocks||[], {
+      onAllDone: ()=>{
+        showAskStatus(false);
+        if (data.xpReward) awardXP(data.xpReward,'followup');
+        sound('complete');
+        showGameNotif('🙋','+XP',`Follow-up answered! +${data.xpReward||20} XP`,'green',1800);
+      },
+    });
+
+  } catch(err) {
+    showAskStatus(false);
+    const msg = err.name==='AbortError'
+      ? '⏱ Request timed out. Try a shorter question.'
+      : `⚠️ ${err.message||'Could not get answer.'}`;
+    showProfMsg(msg);
+    sound('error');
+  } finally {
+    el('askBtn').disabled   = false;
+    el('askInput').disabled = false;
+    el('askInput').focus();
+  }
+}
+
+function showAskStatus(visible, text='') {
+  const s = el('askStatus');
+  s.style.display = visible ? 'flex' : 'none';
+  if (text) el('askStatusText').textContent = text;
+}
+
+/* ══ 12. RIGHT SIDEBAR PANELS ══════════════════════════════════ */
+function showFactPanel(fact) {
+  if (!fact) return;
+  el('factEmpty').style.display = 'none';
+  el('factText').textContent    = fact;
+  el('factText').style.display  = 'block';
+}
+
+function showTermsPanel(terms) {
+  if (!terms?.length) return;
+  el('termsEmpty').style.display = 'none';
+  el('glossaryList').innerHTML   = terms.map((t,i)=>`
+    <div class="glossary-term">
+      <span class="term-word">${t}</span>
+      <span class="term-idx">#${i+1}</span>
+    </div>`).join('');
+  el('glossaryList').style.display='flex';
+}
+
+/* ══ 13. QUIZ ══════════════════════════════════════════════════ */
+function setupQuizPanel(quiz) {
+  if (!quiz?.length) return;
   currentQuiz = quiz;
   quizIndex   = 0;
   quizScore   = 0;
-  el('quizCard').style.display   = 'block';
-  el('resultCard').style.display = 'none';
-  renderQuizQuestion();
+  quizCombo   = 0;
+  el('quizEmpty').style.display   = 'none';
+  el('quizInner').style.display   = 'block';
+  el('resultInner').style.display = 'none';
+  renderQ();
 }
 
-function renderQuizQuestion() {
-  const q     = currentQuiz[quizIndex];
-  const total = currentQuiz.length;
+function renderQ() {
+  const q=currentQuiz[quizIndex], total=currentQuiz.length;
   if (!q) return;
-
-  // Counter: 1-based display, wired to quizIndex
-  el('quizQCount').textContent  = `Question ${quizIndex + 1} / ${total}`;
-  el('quizProgFill').style.width = ((quizIndex / total) * 100) + '%';
-  el('quizQuestion').textContent = q.question;
-  el('quizExplanation').style.display = 'none';
-  el('quizNextBtn').style.display     = 'none';
-
-  const opts    = el('quizOptions');
-  opts.innerHTML = '';
-  ['A','B','C','D'].forEach((letter, i) => {
+  el('quizQCount').textContent  = `Question ${quizIndex+1} / ${total}`;
+  el('quizProgFill').style.width= ((quizIndex/total)*100)+'%';
+  el('quizQuestion').textContent= q.question;
+  el('quizExplanation').style.display='none';
+  el('quizNextBtn').style.display='none';
+  const opts=el('quizOptions');
+  opts.innerHTML='';
+  ['A','B','C','D'].forEach((L,i)=>{
     if (!q.options[i]) return;
-    const btn = document.createElement('button');
-    btn.className = 'quiz-opt';
-    btn.innerHTML = `<span class="opt-letter">${letter}</span>${q.options[i]}`;
-    btn.addEventListener('click', () => handleQuizAnswer(i, q));
-    opts.appendChild(btn);
+    const b=document.createElement('button');
+    b.className='quiz-opt';
+    b.innerHTML=`<span class="opt-letter">${L}</span>${q.options[i]}`;
+    b.addEventListener('click',()=>answerQ(i,q));
+    opts.appendChild(b);
   });
 }
 
-function handleQuizAnswer(chosen, q) {
-  const correct = q.correct;
-  document.querySelectorAll('.quiz-opt').forEach((btn, i) => {
-    btn.disabled = true;
-    if (i === correct)     btn.classList.add('correct');
-    else if (i === chosen) btn.classList.add('wrong');
+function answerQ(chosen, q) {
+  const correct=q.correct;
+  document.querySelectorAll('.quiz-opt').forEach((b,i)=>{
+    b.disabled=true;
+    if (i===correct) b.classList.add('correct');
+    else if (i===chosen) b.classList.add('wrong');
   });
 
   STATE.quizTotal++;
-  if (chosen === correct) {
+  if (chosen===correct) {
     quizScore++;
+    quizCombo++;
     STATE.quizCorrect++;
-    playSound('correct');
+    if (quizCombo > (STATE.maxCombo||0)) STATE.maxCombo=quizCombo;
+    sound('correct');
+    // Combo notifications
+    if (quizCombo===2) showGameNotif('⚡','NICE!','2 correct in a row','green',1600);
+    if (quizCombo===3) { showGameNotif('🔥','COMBO x3!','You\'re on fire!','orange',2000); comboFlash(); }
+    if (quizCombo>=4)  { showGameNotif('💥',`COMBO x${quizCombo}!`,'Unstoppable!','red',2000); comboFlash(); }
   } else {
-    playSound('wrong');
+    quizCombo=0;
+    sound('wrong');
   }
-  saveState();
+  save();
 
   el('quizExplanation').textContent   = q.explanation;
   el('quizExplanation').style.display = 'block';
   el('quizNextBtn').style.display     = 'inline-block';
-  el('quizNextBtn').textContent       = quizIndex < currentQuiz.length - 1
-    ? 'Next ➤' : 'See Results ➤';
+  el('quizNextBtn').textContent       = quizIndex<currentQuiz.length-1?'Next ➤':'Results ➤';
 }
 
-function nextQuizQuestion() {
-  quizIndex++; // increment counter
-  if (quizIndex < currentQuiz.length) {
-    renderQuizQuestion(); // counter display updates inside
-  } else {
-    showQuizResult();
-  }
+function nextQ() {
+  quizIndex++;
+  if (quizIndex<currentQuiz.length) renderQ();
+  else showQuizResult();
 }
 
 function showQuizResult() {
-  const total = currentQuiz.length;
-  const pct   = Math.round((quizScore / total) * 100);
-  const stars = quizScore === total ? '⭐⭐⭐' : quizScore >= Math.ceil(total/2) ? '⭐⭐' : '⭐';
-  const msgs  = RESULT_MESSAGES[Math.min(quizScore, 3)];
-  const msg   = msgs[Math.floor(Math.random() * msgs.length)];
+  const total=currentQuiz.length;
+  const pct=Math.round((quizScore/total)*100);
+  const stars=quizScore===total?'⭐⭐⭐':quizScore>=Math.ceil(total/2)?'⭐⭐':'⭐';
+  const msgs={3:['🔥 Flawless!','💯 Perfect!'],2:['👍 Great job!','⚡ Sharp!'],1:['🙂 Keep going!','📖 Review & retry!'],0:['😅 Review the lesson!','🔄 Try again!']};
+  const m=msgs[Math.min(quizScore,3)];
 
-  el('quizCard').style.display   = 'none';
-  el('resultCard').style.display = 'block';
-  el('resultStars').textContent  = stars;
-  el('resultScore').textContent  = `${quizScore} / ${total} (${pct}%)`;
-  el('resultMsg').textContent    = msg;
+  el('quizInner').style.display   = 'none';
+  el('resultInner').style.display = 'block';
+  el('resultStars').textContent   = stars;
+  el('resultScore').textContent   = `${quizScore} / ${total} (${pct}%)`;
+  el('resultMsg').textContent     = m[Math.floor(Math.random()*m.length)];
 
-  const quizXP = quizScore * 20;
-  el('resultXP').textContent = `+${quizXP} XP earned!`;
-  awardXP(quizXP);
+  const qxp=quizScore*20;
+  el('resultXP').textContent=`+${qxp} XP earned!`;
+  awardXP(qxp,'quiz');
 
-  if (quizScore === total) STATE.perfectQuizzes++;
-  if (quizScore >= Math.ceil(total/2)) STATE.quizzesPassed++;
-  saveState();
-  checkBadges();
-  playSound(quizScore === total ? 'perfect' : 'complete');
+  if (quizScore===total) { STATE.perfectQuizzes++; sound('perfect'); showGameNotif('💯','PERFECT QUIZ!','All 3 correct!','gold',3000); }
+  else if (quizScore>=Math.ceil(total/2)) { STATE.quizzesPassed++; sound('complete'); }
+  else sound('wrong');
+  save(); checkBadges();
 }
 
-function retryQuiz() {
-  // Reset counter and re-render
-  showQuiz(currentQuiz);
-}
+function retryQuiz() { setupQuizPanel(currentQuiz); }
 
-/* ══════════════════════════════════════════════════════════════
-   13. FACT & GLOSSARY
-══════════════════════════════════════════════════════════════ */
-function showFactCard(fact) {
-  if (!fact) return;
-  el('factText').textContent   = fact;
-  el('factCard').style.display = 'block';
-}
-
-function showGlossary(terms) {
-  if (!terms?.length) return;
-  el('glossaryList').innerHTML = terms.map(t =>
-    `<div class="glossary-term"><span class="term-word">${t}</span></div>`
-  ).join('');
-  el('glossaryCard').style.display = 'block';
-}
-
-/* ══════════════════════════════════════════════════════════════
-   14. LESSON HISTORY
-══════════════════════════════════════════════════════════════ */
-function addToHistory(topic, data) {
-  const entry = {
-    id: Date.now(), topic,
-    diff: data.difficulty || 'Intermediate',
-    xp:   data.xpReward  || 100,
-    ts:   Date.now(),
-  };
-  STATE.lessonHistory.unshift(entry);
-  if (STATE.lessonHistory.length > 50) STATE.lessonHistory.pop();
-  saveState();
-  renderHistory();
+/* ══ 14. HISTORY ═══════════════════════════════════════════════ */
+function addToHistory(topic,data) {
+  STATE.lessonHistory.unshift({id:Date.now(),topic,diff:data.difficulty||'Intermediate',xp:data.xpReward||80,ts:Date.now()});
+  if (STATE.lessonHistory.length>50) STATE.lessonHistory.pop();
+  save(); renderHistory();
 }
 
 function renderHistory() {
-  const container = el('lessonHistory');
-  if (!STATE.lessonHistory.length) {
-    container.innerHTML = '<div class="history-empty">No lessons yet. Start one above! 👆</div>';
-    return;
-  }
-  const icons = { Beginner:'🟢', Intermediate:'🟡', Advanced:'🔴' };
-  container.innerHTML = STATE.lessonHistory.slice(0,20).map((h,i) => `
+  const c=el('lessonHistory');
+  if (!STATE.lessonHistory.length) { c.innerHTML='<div class="history-empty">No lessons yet! 👆</div>'; return; }
+  const ico={Beginner:'🟢',Intermediate:'🟡',Advanced:'🔴'};
+  c.innerHTML=STATE.lessonHistory.slice(0,20).map((h,i)=>`
     <div class="history-item${i===0?' active':''}" data-topic="${encodeURIComponent(h.topic)}">
-      <span class="hi-icon">${icons[h.diff]||'📖'}</span>
+      <span class="hi-icon">${ico[h.diff]||'📖'}</span>
       <div class="hi-info">
         <div class="hi-topic">${h.topic}</div>
         <div class="hi-meta">+${h.xp} XP · <span class="hi-diff diff-${h.diff}">${h.diff}</span></div>
       </div>
     </div>`).join('');
-
-  container.querySelectorAll('.history-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const topic = decodeURIComponent(item.dataset.topic);
-      el('topicInput').value = topic;
-      container.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+  c.querySelectorAll('.history-item').forEach(item=>{
+    item.addEventListener('click',()=>{
+      const topic=decodeURIComponent(item.dataset.topic);
+      el('topicInput').value=topic;
+      c.querySelectorAll('.history-item').forEach(i=>i.classList.remove('active'));
       item.classList.add('active');
       el('topicInput').focus();
     });
   });
 }
 
-/* ══════════════════════════════════════════════════════════════
-   15. DAILY CHALLENGE  (fixed with fallback)
-══════════════════════════════════════════════════════════════ */
-const FALLBACK_CHALLENGE = 'Explain the difference between speed and velocity';
-
+/* ══ 15. DAILY CHALLENGE ═══════════════════════════════════════ */
 function setupDailyChallenge() {
   const today  = new Date().toDateString();
-  const dayIdx = Math.floor(Date.now() / 86400000) % DAILY_CHALLENGES.length;
-  const topic  = DAILY_CHALLENGES[dayIdx] || FALLBACK_CHALLENGE;
-
-  el('dcTopic').textContent = topic;
-
-  const done = STATE.dailyChallengeDate === today && STATE.dailyChallengeDone;
-  const btn  = el('dcBtn');
+  const dayIdx = Math.floor(Date.now()/86400000)%DAILY_CHALLENGES.length;
+  const topic  = DAILY_CHALLENGES[dayIdx]||'The Water Cycle';
+  el('dcTopic').textContent=topic;
+  const done=STATE.dailyChallengeDate===today&&STATE.dailyChallengeDone;
+  const btn=el('dcBtn');
   btn.disabled    = done;
-  btn.textContent = done ? '✅ Completed Today!' : 'Accept Challenge';
-
-  btn.onclick = () => {
-    if (STATE.dailyChallengeDate !== today) {
-      STATE.dailyChallengeDone = false;
-      saveState();
-    }
-    el('topicInput').value = topic;
-    startLesson(topic, true);
+  btn.textContent = done?'✅ Done Today!':'Accept Challenge';
+  btn.onclick=()=>{
+    if (STATE.dailyChallengeDate!==today) { STATE.dailyChallengeDone=false; save(); }
+    el('topicInput').value=topic;
+    startLesson(topic,true);
   };
 }
 
-/* ══════════════════════════════════════════════════════════════
-   16. ASK CHIPS
-══════════════════════════════════════════════════════════════ */
+/* ══ 16. ASK CHIPS ════════════════════════════════════════════ */
 function populateAskChips() {
-  const chips = el('askChips');
-  chips.innerHTML = FOLLOW_UP_CHIPS.map(chip =>
-    `<button class="ask-chip">${chip}</button>`
-  ).join('');
-  chips.querySelectorAll('.ask-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      el('askInput').value = btn.textContent;
-      el('askInput').focus();
-    });
+  el('askChips').innerHTML=FOLLOW_UP_CHIPS.map(c=>`<button class="ask-chip">${c}</button>`).join('');
+  el('askChips').querySelectorAll('.ask-chip').forEach(b=>{
+    b.addEventListener('click',()=>{ el('askInput').value=b.textContent; el('askInput').focus(); });
   });
 }
 
-/* ══════════════════════════════════════════════════════════════
-   17. BADGES MODAL
-══════════════════════════════════════════════════════════════ */
-function renderBadgesModal() {
-  el('badgesGrid').innerHTML = BADGES.map(b => {
-    const earned = STATE.earnedBadges.includes(b.id);
-    return `<div class="badge-cell ${earned?'earned':'locked'}" title="${b.desc}">
+/* ══ 17. RIGHT SIDEBAR TABS ════════════════════════════════════ */
+function switchRSTab(tab) {
+  document.querySelectorAll('.rs-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.rs-panel').forEach(p=>p.classList.toggle('active',p.id===`panel-${tab}`));
+}
+
+/* ══ 18. BADGES MODAL ══════════════════════════════════════════ */
+function renderBadges() {
+  el('badgesGrid').innerHTML=BADGES.map(b=>{
+    const e=STATE.earnedBadges.includes(b.id);
+    return `<div class="badge-cell ${e?'earned':'locked'}" title="${b.desc}">
       <div class="badge-icon">${b.icon}</div>
       <div class="badge-name">${b.name}</div>
     </div>`;
   }).join('');
 }
 
-/* ══════════════════════════════════════════════════════════════
-   18. LEADERBOARD  (label fixed)
-══════════════════════════════════════════════════════════════ */
+/* ══ 19. LEADERBOARD ══════════════════════════════════════════ */
 function renderLeaderboard() {
-  const sessions = JSON.parse(localStorage.getItem('pb_sessions') || '[]');
-  const you      = { name: STATE.playerName, xp: STATE.totalXP, isYou: true };
-  const all      = [...sessions.filter(s => s.name !== STATE.playerName), you]
-    .sort((a,b) => b.xp - a.xp).slice(0,10);
-
-  const rankClass = ['gold','silver','bronze'];
-  el('lbList').innerHTML = all.map((s,i) => `
+  const sess=JSON.parse(localStorage.getItem('pb_sessions')||'[]');
+  const you={name:STATE.playerName,xp:STATE.totalXP,isYou:true};
+  const all=[...sess.filter(s=>s.name!==STATE.playerName),you].sort((a,b)=>b.xp-a.xp).slice(0,10);
+  const rc=['gold','silver','bronze'];
+  el('lbList').innerHTML=all.map((s,i)=>`
     <div class="lb-row${s.isYou?' you':''}">
-      <span class="lb-rank ${rankClass[i]||''}">${['🥇','🥈','🥉'][i]||(i+1)}</span>
+      <span class="lb-rank ${rc[i]||''}">${['🥇','🥈','🥉'][i]||(i+1)}</span>
       <span class="lb-name">${s.name}${s.isYou?' (You)':''}</span>
       <span class="lb-xp">${s.xp} XP</span>
     </div>`).join('');
-
-  const rank = all.findIndex(s=>s.isYou) + 1;
-  el('lbYourRank').textContent = `Your rank: #${rank} · ${STATE.totalXP} XP total`;
-  localStorage.setItem('pb_sessions', JSON.stringify(all.map(s=>({name:s.name,xp:s.xp}))));
+  const rank=all.findIndex(s=>s.isYou)+1;
+  el('lbYourRank').textContent=`Your rank: #${rank} · ${STATE.totalXP} XP`;
+  localStorage.setItem('pb_sessions',JSON.stringify(all.map(s=>({name:s.name,xp:s.xp}))));
 }
 
-/* ══════════════════════════════════════════════════════════════
-   19. CHECKPOINT
-══════════════════════════════════════════════════════════════ */
-function showCheckpoint(question, hint) {
-  el('cpQuestion').textContent = question;
-  el('cpHint').textContent     = hint;
-  el('cpHint').style.display   = 'none';
-  el('cpHintBtn').style.display = 'block';
-  openModal('checkpointOverlay');
-  wb.setPaused(true);
-  playSound('checkpoint');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   20. ERROR DISPLAY
-══════════════════════════════════════════════════════════════ */
+/* ══ 20. ERROR & UI STATE ══════════════════════════════════════ */
 function showError(msg) {
-  el('errText').textContent    = msg || 'Professor Byte couldn\'t connect. Please try again.';
-  el('boardError').style.display = 'flex';
-  el('boardIdle').style.display  = 'none';
+  el('errText').textContent    = msg||'Professor Byte couldn\'t connect.';
+  el('boardError').style.display='flex';
+  el('boardIdle').style.display='none';
 }
-function hideError() {
-  el('boardError').style.display = 'none';
-}
+function hideError() { el('boardError').style.display='none'; }
 
-/* ══════════════════════════════════════════════════════════════
-   21. UI STATE MACHINE
-══════════════════════════════════════════════════════════════ */
-function setUIState(state) {
-  const teachBtn = el('teachBtn');
-  const askBtn   = el('askBtn');
-  switch (state) {
+function setUIState(s) {
+  const tb=el('teachBtn'), ab=el('askBtn');
+  switch(s) {
     case 'idle':
-      el('boardControls').style.display = 'none';
-      teachBtn.disabled = false;
-      break;
+      el('boardControls').style.display='none'; if(tb)tb.disabled=false; break;
     case 'loading':
-      el('boardControls').style.display = 'none';
-      el('askDock').style.display       = 'none';
-      teachBtn.disabled = true;
-      if (askBtn) askBtn.disabled = true;
-      break;
+      el('boardControls').style.display='none'; el('askBar').style.display='none';
+      if(tb)tb.disabled=true; if(ab)ab.disabled=true; break;
     case 'writing':
-      el('boardControls').style.display = 'flex';
-      teachBtn.disabled = true;
-      el('pauseBtn').textContent = '⏸ Pause';
-      break;
+      el('boardControls').style.display='flex'; if(tb)tb.disabled=true;
+      el('pauseBtn').textContent='⏸ Pause'; break;
     case 'done':
-      el('boardControls').style.display = 'flex';
-      teachBtn.disabled = false;
-      if (askBtn) askBtn.disabled = false;
-      break;
+      el('boardControls').style.display='flex';
+      if(tb)tb.disabled=false; if(ab)ab.disabled=false; break;
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   22. SOUND ENGINE  (lazy AudioContext init — no autoplay block)
-══════════════════════════════════════════════════════════════ */
+/* ══ 21. SOUND ENGINE (lazy init) ═════════════════════════════ */
 function initAudio() {
   if (_audioCtx) return _audioCtx;
-  try {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch {}
+  try { _audioCtx=new(window.AudioContext||window.webkitAudioContext)(); } catch{}
   return _audioCtx;
 }
 
-function playSound(type) {
-  if (!STATE.soundOn) return;
-  const ctx = _audioCtx; // only use if already initialised
-  if (!ctx) return;
-
-  const osc  = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  const now = ctx.currentTime;
-
-  switch (type) {
-
-    case 'click':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, now);
-      gain.gain.setValueAtTime(0.04, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.1);
-      osc.start(now); osc.stop(now+0.1); break;
-    case 'xp':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880 + Math.random()*200, now);
-      gain.gain.setValueAtTime(0.08, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.2);
-      osc.start(now); osc.stop(now+0.2); break;
-    case 'combo':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(400, now);
-      osc.frequency.setValueAtTime(800, now+0.05);
-      gain.gain.setValueAtTime(0.06, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.15);
-      osc.start(now); osc.stop(now+0.15); break;
+function sound(type) {
+  if (!STATE.soundOn||!_audioCtx) return;
+  const ctx=_audioCtx, now=ctx.currentTime;
+  const beep=(f,t,vol=0.1,wave='sine',dur=0.3)=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type=wave; o.frequency.setValueAtTime(f,now+t);
+    g.gain.setValueAtTime(vol,now+t);
+    g.gain.exponentialRampToValueAtTime(0.001,now+t+dur);
+    o.start(now+t); o.stop(now+t+dur);
+  };
+  switch(type) {
+    case 'start':
+      beep(440,0,.08,'sine',.15); beep(554,0.1,.08,'sine',.15); break;
     case 'correct':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523, now);
-      osc.frequency.setValueAtTime(659, now+0.1);
-      gain.gain.setValueAtTime(0.14, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.35);
-      osc.start(now); osc.stop(now+0.35); break;
+      beep(523,0,.12,'sine',.12); beep(659,0.1,.12,'sine',.18); break;
     case 'wrong':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(180, now);
-      gain.gain.setValueAtTime(0.07, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.22);
-      osc.start(now); osc.stop(now+0.22); break;
-    case 'levelup':
-      osc.type = 'sine';
-      [261,329,392,523].forEach((f,i) => osc.frequency.setValueAtTime(f, now+i*0.12));
-      gain.gain.setValueAtTime(0.14, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.6);
-      osc.start(now); osc.stop(now+0.6); break;
-    case 'badge':
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(880, now);
-      osc.frequency.setValueAtTime(1108, now+0.08);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.28);
-      osc.start(now); osc.stop(now+0.28); break;
-    case 'checkpoint':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, now);
-      gain.gain.setValueAtTime(0.11, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.4);
-      osc.start(now); osc.stop(now+0.4); break;
-    case 'perfect':
-      [523,659,784,1046].forEach((f,i) => {
-        const o2=ctx.createOscillator(), g2=ctx.createGain();
-        o2.connect(g2); g2.connect(ctx.destination);
-        o2.type='sine'; o2.frequency.value=f;
-        g2.gain.setValueAtTime(0.09, now+i*0.1);
-        g2.gain.exponentialRampToValueAtTime(0.001, now+i*0.1+0.3);
-        o2.start(now+i*0.1); o2.stop(now+i*0.1+0.3);
-      }); return;
+      beep(200,0,.07,'square',.22); break;
     case 'complete':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523, now);
-      osc.frequency.setValueAtTime(659, now+0.15);
-      gain.gain.setValueAtTime(0.11, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now+0.4);
-      osc.start(now); osc.stop(now+0.4); break;
+      beep(523,0,.1); beep(659,.12,.1); beep(784,.24,.1); break;
+    case 'perfect':
+      [523,659,784,1046].forEach((f,i)=>beep(f,i*.1,.09,'sine',.3)); break;
+    case 'levelup':
+      [261,329,392,523].forEach((f,i)=>beep(f,i*.12,.13,'sine',.25)); break;
+    case 'badge':
+      beep(880,0,.09,'triangle',.12); beep(1108,.08,.09,'triangle',.15); break;
+    case 'combo':
+      beep(659,0,.1,'sine',.1); beep(784,.08,.1,'sine',.1); beep(1046,.16,.13,'sine',.2); break;
+    case 'error':
+      beep(150,0,.07,'sawtooth',.25); break;
+    case 'checkpoint':
+      beep(440,0,.1,'sine',.4); break;
+    case 'xp':
+      beep(1000,0,.06,'sine',.12); break;
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   23. MODALS
-══════════════════════════════════════════════════════════════ */
-function openModal(id)  { document.getElementById(id)?.classList.add('active');    }
-function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
+/* ══ 22. CHECKPOINT ════════════════════════════════════════════ */
+function showCheckpoint(question,hint) {
+  el('cpQuestion').textContent=question;
+  el('cpHint').textContent=hint;
+  el('cpHint').style.display='none';
+  el('cpHintBtn').style.display='block';
+  openModal('checkpointOverlay');
+  wb.setPaused(true);
+  sound('checkpoint');
+  showGameNotif('⚑','CHECKPOINT','Think about it…','purple',2000);
+}
 
-/* ══════════════════════════════════════════════════════════════
-   24. MISC UTILS
-══════════════════════════════════════════════════════════════ */
-function el(id) { return document.getElementById(id); }
+/* ══ 23. FULLSCREEN ════════════════════════════════════════════ */
+let _fs=false;
+function toggleFullscreen() {
+  _fs=!_fs;
+  el('gameLayout').classList.toggle('fullscreen',_fs);
+  el('boardFsBtn').textContent = _fs?'⛶ Exit':'⛶ Fullscreen';
+  el('fullscreenBtn').textContent=_fs?'⛶ Exit':'⛶';
+  if (_fs) {
+    el('leftOpenBtn').style.display='flex';
+    el('rightOpenHudBtn').style.display='flex';
+  } else {
+    el('leftOpenBtn').style.display='none';
+    el('rightOpenHudBtn').style.display='none';
+    el('leftSidebar').classList.remove('collapsed');
+    el('rightSidebar').classList.remove('collapsed');
+  }
+  // Force canvas resize
+  setTimeout(()=>wb._resize(),300);
+}
 
-function showProfMessage(msg) {
-  const area  = el('achievementArea');
-  if (!area) return;
-  const toast = document.createElement('div');
-  toast.className = 'achievement-toast';
-  toast.style.cssText = 'background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.3)';
-  toast.innerHTML = `<div class="toast-icon">🎓</div>
+/* ══ 24. MISC ══════════════════════════════════════════════════ */
+function el(id){return document.getElementById(id);}
+function openModal(id){document.getElementById(id)?.classList.add('active');}
+function closeModal(id){document.getElementById(id)?.classList.remove('active');}
+
+function showProfMsg(msg) {
+  const area=el('achievementArea'); if(!area) return;
+  const t=document.createElement('div');
+  t.className='achievement-toast';
+  t.style.cssText='background:rgba(0,229,160,.08);border-color:rgba(0,229,160,.3)';
+  t.innerHTML=`<div class="toast-icon">🎓</div>
     <div class="toast-info">
       <div class="toast-title">Professor Byte</div>
       <div class="toast-desc">${msg}</div>
     </div>`;
-  area.prepend(toast);
-  setTimeout(() => toast.remove(), 5000);
+  area.prepend(t);
+  setTimeout(()=>t.remove(),5000);
 }
 
-function applyColorTheme(theme) {
-  const r = document.documentElement;
-  if (theme === 'neon') {
-    r.style.setProperty('--bg-board','#050f1a');
-    r.style.setProperty('--chalk-white','#00ff88');
-  } else if (theme === 'sunset') {
-    r.style.setProperty('--bg-board','#1a0f00');
-    r.style.setProperty('--chalk-white','#ffb347');
-  } else {
-    r.style.setProperty('--bg-board','#1a3a2a');
-    r.style.setProperty('--chalk-white','#f0ece0');
-  }
+function applyTheme(theme) {
+  const r=document.documentElement;
+  if (theme==='neon')   { r.style.setProperty('--bg-board','#050f1a'); r.style.setProperty('--chalk-white','#00ff88'); }
+  else if(theme==='sunset'){ r.style.setProperty('--bg-board','#1a0f00'); r.style.setProperty('--chalk-white','#ffb347'); }
+  else                  { r.style.setProperty('--bg-board','#1a3a2a'); r.style.setProperty('--chalk-white','#f0ece0'); }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   25. ONBOARDING  (persists name, skips on return)
-══════════════════════════════════════════════════════════════ */
+/* ══ 25. ONBOARDING ════════════════════════════════════════════ */
 function setupOnboarding() {
-  const nameInput = el('studentNameInput');
-  const startBtn  = el('startAdventureBtn');
-
-  nameInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') startBtn.click();
-  });
-
-  startBtn.addEventListener('click', () => {
-    // Lazy-init AudioContext on first real user interaction
-    initAudio();
-
-    const name = nameInput.value.trim() || 'Student';
-    STATE.playerName  = name;
-    STATE.hasOnboarded = true;
-    // Persist name separately for quick access
-    localStorage.setItem('pb_studentName', name);
-    saveState();
-    updateHUD();
+  const ni=el('studentNameInput'), sb=el('startAdventureBtn');
+  ni.addEventListener('keydown',e=>{ if(e.key==='Enter') sb.click(); });
+  sb.addEventListener('click',()=>{
+    initAudio(); // lazy init on first real user gesture
+    const name=(ni.value.trim()||'Student');
+    STATE.playerName=name; STATE.hasOnboarded=true;
+    localStorage.setItem('pb_studentName',name);
+    save(); updateHUD();
     closeModal('splashOverlay');
-    playSound('levelup');
+    sound('levelup');
+    // Welcome notification
+    setTimeout(()=>showGameNotif('🎓','WELCOME!',`Ready to learn, ${name}?`,'green',2500),500);
   });
-
-  // Skip onboarding if already done
-  const savedName = localStorage.getItem('pb_studentName');
-  if (STATE.hasOnboarded && savedName) {
-    STATE.playerName = savedName;
-    closeModal('splashOverlay');
-  } else {
-    nameInput.focus();
-  }
+  const saved=localStorage.getItem('pb_studentName');
+  if (STATE.hasOnboarded&&saved) { STATE.playerName=saved; closeModal('splashOverlay'); }
+  else ni.focus();
 }
 
-/* ══════════════════════════════════════════════════════════════
-   26. EVENT WIRING
-══════════════════════════════════════════════════════════════ */
-function wireEvents() {
+/* ══ 26. WIRE EVENTS ═══════════════════════════════════════════ */
+function wire() {
+  /* Topic input */
+  const ti=el('topicInput'), tb=el('teachBtn');
+  ti.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();tb.click();} });
+  ti.addEventListener('input',()=>{ ti.classList.remove('error'); el('topicError').style.display='none'; });
+  tb.addEventListener('click',()=>{ const t=ti.value.trim(); startLesson(t); if(t)ti.value=''; });
 
-  /* — Topic Input — */
-  const topicInput = el('topicInput');
-  const teachBtn   = el('teachBtn');
-
-  topicInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); teachBtn.click(); }
-  });
-  topicInput.addEventListener('input', () => {
-    topicInput.classList.remove('error');
-    el('topicError').style.display = 'none';
+  /* Suggestion chips */
+  document.querySelectorAll('.sug-chip').forEach(c=>{
+    c.addEventListener('click',()=>{ el('topicInput').value=c.dataset.topic||c.textContent; startLesson(c.dataset.topic||c.textContent); });
   });
 
-  teachBtn.addEventListener('click', () => {
-    const topic = topicInput.value.trim();
-    startLesson(topic);
-    if (topic) topicInput.value = '';
+  /* Ask bar */
+  const ai=el('askInput'), ab=el('askBtn');
+  ai.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();ab.click();} });
+  ab.addEventListener('click',()=>{ const q=ai.value.trim(); if(q) askFollowUp(q); });
+
+  /* Board controls */
+  el('pauseBtn').addEventListener('click',()=>{
+    const p=!wb._paused; wb.setPaused(p);
+    el('pauseBtn').textContent=p?'▶ Resume':'⏸ Pause';
+  });
+  el('speedBtn').addEventListener('click',()=>{
+    const sp=['slow','normal','fast','instant'],ic=['🐢','🚶','🐇','⚡'],lb=['Slow','Normal','Fast','Instant'];
+    const n=(sp.indexOf(STATE.writeSpeed)+1)%sp.length;
+    STATE.writeSpeed=sp[n]; wb.setSpeed(STATE.writeSpeed);
+    el('speedBtn').textContent=`${ic[n]} ${lb[n]}`; save();
+    if(sp[n]==='fast'||sp[n]==='instant') showGameNotif('🚀','TURBO MODE!','Writing at max speed','orange',1500);
+  });
+  el('clearBtn').addEventListener('click',()=>{
+    wb.clear(); interactionId=null;
+    el('boardIdle').style.display='flex';
+    el('boardIdle').querySelector('.idle-text').textContent='Professor Byte is ready to teach!';
+    el('boardIdle').querySelector('.idle-sub').textContent='Type a topic and press ▶ to start';
+    el('boardError').style.display='none';
+    el('lessonMeta').style.display='none';
+    el('askBar').style.display='none';
+    el('boardControls').style.display='none';
+    setUIState('idle'); el('topicInput').focus();
+  });
+  el('screenshotBtn').addEventListener('click',()=>wb.saveAsImage());
+  el('boardFsBtn').addEventListener('click',toggleFullscreen);
+  el('fullscreenBtn').addEventListener('click',toggleFullscreen);
+
+  /* Sidebar toggles — LEFT */
+  el('leftCloseBtn').addEventListener('click',()=>{
+    el('leftSidebar').classList.add('collapsed');
+    el('leftOpenBtn').style.display='flex';
+  });
+  el('leftOpenBtn').addEventListener('click',()=>{
+    el('leftSidebar').classList.remove('collapsed');
+    el('leftOpenBtn').style.display='none';
+    setTimeout(()=>wb._resize(),280);
   });
 
-  /* — Suggestion chips — */
-  document.querySelectorAll('.sug-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const topic = chip.dataset.topic || chip.textContent;
-      el('topicInput').value = topic;
-      startLesson(topic);
+  /* Sidebar toggles — RIGHT */
+  el('rightCloseBtn').addEventListener('click',()=>{
+    el('rightSidebar').classList.add('collapsed');
+    el('rightOpenHudBtn').style.display='flex';
+    setTimeout(()=>wb._resize(),280);
+  });
+  el('rightOpenHudBtn').addEventListener('click',()=>{
+    el('rightSidebar').classList.remove('collapsed');
+    el('rightOpenHudBtn').style.display='none';
+    setTimeout(()=>wb._resize(),280);
+  });
+
+  /* Right sidebar tabs */
+  document.querySelectorAll('.rs-tab').forEach(t=>{
+    t.addEventListener('click',()=>switchRSTab(t.dataset.tab));
+  });
+
+  /* Error retry */
+  el('errRetryBtn').addEventListener('click',()=>{ hideError(); if(lastTopic)startLesson(lastTopic); });
+
+  /* Quiz */
+  el('quizNextBtn').addEventListener('click',nextQ);
+  el('retryQuizBtn').addEventListener('click',retryQuiz);
+
+  /* HUD buttons */
+  el('badgesBtn').addEventListener('click',()=>{ renderBadges(); openModal('badgesOverlay'); });
+  el('leaderboardBtn').addEventListener('click',()=>{ renderLeaderboard(); openModal('leaderboardOverlay'); });
+  el('settingsBtn').addEventListener('click',()=>openModal('settingsOverlay'));
+
+  /* Modals */
+  document.querySelectorAll('.modal-close[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+  document.querySelectorAll('.modal-overlay').forEach(o=>{
+    o.addEventListener('click',e=>{ if(e.target===o&&o.id!=='splashOverlay')closeModal(o.id); });
+  });
+  el('luCloseBtn').addEventListener('click',()=>closeModal('levelUpOverlay'));
+
+  /* Checkpoint */
+  el('cpHintBtn').addEventListener('click',()=>{ el('cpHint').style.display='block'; el('cpHintBtn').style.display='none'; });
+  el('cpContinueBtn').addEventListener('click',()=>{ closeModal('checkpointOverlay'); wb.setPaused(false); });
+  window.addEventListener('wb:checkpoint',e=>showCheckpoint(e.detail.question,e.detail.hint));
+
+  /* Settings */
+  document.querySelectorAll('.speed-opt').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.speed-opt').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); STATE.writeSpeed=b.dataset.speed; wb.setSpeed(b.dataset.speed); save();
+    });
+  });
+  el('soundToggle').addEventListener('click',()=>{
+    STATE.soundOn=!STATE.soundOn;
+    el('soundToggle').textContent=STATE.soundOn?'🔊 ON':'🔇 OFF';
+    el('soundToggle').classList.toggle('off',!STATE.soundOn); save();
+  });
+  el('changeNameBtn').addEventListener('click',()=>{
+    localStorage.removeItem('pb_studentName'); STATE.hasOnboarded=false; save();
+    closeModal('settingsOverlay'); openModal('splashOverlay');
+    el('studentNameInput').value='';
+    setTimeout(()=>el('studentNameInput').focus(),300);
+  });
+  el('resetProgressBtn').addEventListener('click',()=>{
+    if(confirm('Reset ALL progress? This cannot be undone!')) { localStorage.clear(); location.reload(); }
+  });
+  document.querySelectorAll('.color-opt').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.color-opt').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); applyTheme(b.dataset.theme);
     });
   });
 
-  /* — Ask — */
-  const askInput = el('askInput');
-  const askBtn   = el('askBtn');
-  askInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); askBtn.click(); }
-  });
-  askBtn.addEventListener('click', () => {
-    const q = askInput.value.trim();
-    if (q) askFollowUp(q);
-  });
+  /* Chalk tray & eraser */
+  document.querySelector('.eraser')?.addEventListener('click',()=>el('clearBtn').click());
 
-  /* — Board Controls — */
-  el('pauseBtn').addEventListener('click', () => {
-    const p = !wb._paused;
-    wb.setPaused(p);
-    el('pauseBtn').textContent = p ? '▶ Resume' : '⏸ Pause';
-  });
-
-  el('speedBtn').addEventListener('click', () => {
-    const speeds = ['slow','normal','fast','instant'];
-    const icons  = ['🐢','🚶','🐇','⚡'];
-    const labels = ['Slow','Normal','Fast','Instant'];
-    const next   = (speeds.indexOf(STATE.writeSpeed) + 1) % speeds.length;
-    STATE.writeSpeed = speeds[next];
-    wb.setSpeed(STATE.writeSpeed);
-    el('speedBtn').textContent = `${icons[next]} ${labels[next]}`;
-    saveState();
-  });
-
-  el('clearBtn').addEventListener('click', () => {
-    wb.clear();
-    interactionId = null; currentLesson = null;
-    el('boardIdle').style.display       = 'flex';
-    el('boardIdle').querySelector('.idle-text').textContent = 'Professor Byte is ready to teach!';
-    el('boardIdle').querySelector('.idle-sub').textContent  = 'Type a topic → Press ▶ to start your lesson';
-    el('boardError').style.display      = 'none';
-    el('lessonMeta').style.display      = 'none';
-    el('askDock').style.display         = 'none';
-    el('boardControls').style.display   = 'none';
-    el('factCard').style.display        = 'none';
-    el('glossaryCard').style.display    = 'none';
-    el('quizCard').style.display        = 'none';
-    el('resultCard').style.display      = 'none';
-    el('topicInput').focus();
-    setUIState('idle');
-  });
-
-  el('screenshotBtn').addEventListener('click', () => wb.saveAsImage());
-
-  /* — Sidebar toggle (open + close) — */
-  el('collapseBtn').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.add('collapsed');
-    el('sidebarOpenBtn').style.display = 'flex';
-    el('collapseBtn').style.display    = 'none';
-  });
-
-  el('sidebarOpenBtn').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.remove('collapsed');
-    el('sidebarOpenBtn').style.display = 'none';
-    el('collapseBtn').style.display    = 'flex';
-  });
-
-  /* — Error retry — */
-  el('errRetryBtn').addEventListener('click', () => {
-    hideError();
-    if (lastTopic) startLesson(lastTopic);
-  });
-
-  /* — Quiz — */
-  el('quizNextBtn').addEventListener('click', nextQuizQuestion);
-  el('retryQuizBtn').addEventListener('click', retryQuiz);
-
-  /* — HUD Buttons — */
-  el('badgesBtn').addEventListener('click', () => { renderBadgesModal(); openModal('badgesOverlay'); });
-  el('leaderboardBtn').addEventListener('click', () => { renderLeaderboard(); openModal('leaderboardOverlay'); });
-  el('settingsBtn').addEventListener('click', () => openModal('settingsOverlay'));
-
-  /* — Modal closes — */
-  document.querySelectorAll('.modal-close[data-close]').forEach(btn =>
-    btn.addEventListener('click', () => closeModal(btn.dataset.close))
-  );
-  document.querySelectorAll('.modal-overlay').forEach(overlay =>
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay && overlay.id !== 'splashOverlay') closeModal(overlay.id);
-    })
-  );
-
-  el('luCloseBtn').addEventListener('click', () => closeModal('levelUpOverlay'));
-
-  /* — Checkpoint — */
-  el('cpHintBtn').addEventListener('click', () => {
-    el('cpHint').style.display    = 'block';
-    el('cpHintBtn').style.display = 'none';
-  });
-  el('cpContinueBtn').addEventListener('click', () => {
-    closeModal('checkpointOverlay');
-    wb.setPaused(false);
-  });
-
-  window.addEventListener('wb:checkpoint', e =>
-    showCheckpoint(e.detail.question, e.detail.hint)
-  );
-
-  /* — Settings — */
-  document.querySelectorAll('.speed-opt').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.speed-opt').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      STATE.writeSpeed = btn.dataset.speed;
-      wb.setSpeed(STATE.writeSpeed);
-      saveState();
-    });
-  });
-
-  el('soundToggle').addEventListener('click', () => {
-    STATE.soundOn = !STATE.soundOn;
-    el('soundToggle').textContent = STATE.soundOn ? '🔊 ON' : '🔇 OFF';
-    el('soundToggle').classList.toggle('off', !STATE.soundOn);
-    saveState();
-  });
-
-  el('changeNameBtn').addEventListener('click', () => {
-    localStorage.removeItem('pb_studentName');
-    STATE.hasOnboarded = false;
-    saveState();
-    closeModal('settingsOverlay');
-    openModal('splashOverlay');
-    el('studentNameInput').value = '';
-    setTimeout(() => el('studentNameInput').focus(), 300);
-  });
-
-  el('resetProgressBtn').addEventListener('click', () => {
-    if (confirm('Reset ALL progress? This cannot be undone!')) {
-      localStorage.clear();
-      location.reload();
-    }
-  });
-
-  document.querySelectorAll('.color-opt').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.color-opt').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      applyColorTheme(btn.dataset.theme);
-    });
-  });
-
-  /* — Chalk tray & eraser — */
-  document.querySelector('.eraser')?.addEventListener('click', () => el('clearBtn').click());
-
-  /* — Prof avatar — */
-  el('profAvatar').addEventListener('click', () => {
-    const msgs = [
-      'Keep learning — every lesson makes you smarter! 🧠',
-      'You\'re doing great! Knowledge is your superpower! ⚡',
-      'Curiosity is the best learning tool! 🔍',
-      'Every expert was once a beginner. Keep going! 🚀',
-      'The more you learn, the more you earn — XP that is! 🎮',
-    ];
-    showProfMessage(msgs[Math.floor(Math.random() * msgs.length)]);
+  /* Prof avatar */
+  el('profAvatar').addEventListener('click',()=>{
+    const msgs=['Keep learning — every lesson makes you smarter! 🧠','You\'re doing great! ⚡','Curiosity is the best superpower! 🔍','Every expert was once a beginner. Keep going! 🚀','The more topics you finish, the stronger you get! 🎮'];
+    showProfMsg(msgs[Math.floor(Math.random()*msgs.length)]);
+    sound('badge');
   });
 }
 
-/* ══════════════════════════════════════════════════════════════
-   27. INIT
-══════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  loadState();
-
-  wb = new Whiteboard('boardCanvas');
-  wb.setSpeed(STATE.writeSpeed || 'normal');
+/* ══ 27. INIT ══════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  load();
+  wb=new Whiteboard('boardCanvas');
+  wb.setSpeed(STATE.writeSpeed||'normal');
 
   // Sync settings UI
-  document.querySelectorAll('.speed-opt').forEach(btn =>
-    btn.classList.toggle('active', btn.dataset.speed === STATE.writeSpeed)
-  );
-  el('soundToggle').textContent = STATE.soundOn ? '🔊 ON' : '🔇 OFF';
-  el('soundToggle').classList.toggle('off', !STATE.soundOn);
+  document.querySelectorAll('.speed-opt').forEach(b=>b.classList.toggle('active',b.dataset.speed===STATE.writeSpeed));
+  el('soundToggle').textContent=STATE.soundOn?'🔊 ON':'🔇 OFF';
+  el('soundToggle').classList.toggle('off',!STATE.soundOn);
 
-  updateHUD();
-  renderHistory();
-  setupDailyChallenge();
-  wireEvents();
-  setupOnboarding();
+  updateHUD(); renderHistory(); setupDailyChallenge();
+  wire(); setupOnboarding();
+  setTimeout(updateHUD,400);
 
-  setTimeout(updateHUD, 400);
-  console.log('🎓 SlateMind v2.1 ready — Professor Byte at your service!');
-});
-
-
-document.addEventListener('click', (e) => {
-  const target = e.target.closest('button, .topic-card, .quiz-opt');
-  if (target) playSound('click');
-});
-
-initAudioCtx(); // Ensure audio context is ready on first interaction
-
-
-/* Gamified Overlay Text System */
-function showFloatingText(x, y, text, type = 'normal') {
-  const el = document.createElement('div');
-  el.textContent = text;
-  el.className = type === 'combo' ? 'arcade-float arcade-combo' : 'arcade-float';
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
-  document.body.appendChild(el);
-
-  if (type === 'combo') playSound('combo');
-
-  setTimeout(() => el.remove(), 1500);
-}
-
-// Hook into awardXP
-let comboMultiplier = 1;
-let comboTimer = null;
-
-const originalAwardXP = awardXP;
-awardXP = function(amount, x, y) {
-  const baseXP = amount;
-  amount = Math.floor(amount * comboMultiplier);
-
-  originalAwardXP(amount);
-
-  const displayX = x || (window.innerWidth / 2 - 50);
-  const displayY = y || (window.innerHeight / 2 - 50);
-
-  showFloatingText(displayX, displayY, `+${amount} XP`, 'normal');
-
-  if (comboMultiplier > 1) {
-    setTimeout(() => {
-      showFloatingText(displayX + (Math.random()*40-20), displayY - 40, `x${comboMultiplier.toFixed(1)} COMBO!`, 'combo');
-    }, 200);
+  // Daily welcome notification (once per day)
+  const today=new Date().toDateString();
+  if (STATE.hasOnboarded && STATE.lastStudyDate!==today && STATE.currentStreak>0) {
+    setTimeout(()=>showGameNotif('🔥',`${STATE.currentStreak} Day Streak!`,'Keep it alive today!','orange',3000),1500);
   }
 
-  comboMultiplier = Math.min(comboMultiplier + 0.5, 5); // Max 5x combo
-
-  clearTimeout(comboTimer);
-  comboTimer = setTimeout(() => {
-    comboMultiplier = 1;
-  }, 10000); // 10 seconds to keep combo
-};
+  console.log('🎓 SlateMind v2.2 — All systems go!');
+});
