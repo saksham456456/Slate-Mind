@@ -557,71 +557,22 @@ class Whiteboard {
     return lines.length?lines:[''];
   }
 
-  /* ── Save image — full blackboard look ──────────────────── */
+  /* ── Cross-browser image save ───────────────────────────── */
   saveAsImage() {
-    const src  = this.canvas;
-    const name = 'slatmind-lesson-' + Date.now() + '.png';
-    const s    = this._scale();
-
-    // Composite canvas: background + chalk content
-    const out = document.createElement('canvas');
-    out.width  = src.width;
-    out.height = src.height;
-    const ctx  = out.getContext('2d');
-
-    // 1. Board background colour
-    ctx.fillStyle = '#1a3a2a';
-    ctx.fillRect(0, 0, out.width, out.height);
-
-    // 2. Subtle vignette (lighter centre, darker edges)
-    const vg = ctx.createRadialGradient(
-      out.width/2, out.height/2, out.width*0.1,
-      out.width/2, out.height/2, out.width*0.75
-    );
-    vg.addColorStop(0, 'rgba(255,255,255,0.018)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.38)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, out.width, out.height);
-
-    // 3. Chalk tray at bottom
-    const trayH = Math.round(28 * s);
-    ctx.fillStyle = '#3d2b1f';
-    ctx.fillRect(0, out.height - trayH, out.width, trayH);
-    ctx.fillStyle = '#4a3520';
-    ctx.fillRect(0, out.height - trayH, out.width, Math.round(2 * s));
-
-    // 4. Wooden frame border
-    ctx.strokeStyle = '#3d2b1f';
-    ctx.lineWidth   = Math.round(7 * s);
-    ctx.strokeRect(0, 0, out.width, out.height);
-
-    // 5. Chalk content on top
-    ctx.drawImage(src, 0, 0);
-
-    // 6. Subtle watermark
-    ctx.save();
-    ctx.font      = Math.round(13 * s) + 'px monospace';
-    ctx.fillStyle = 'rgba(240,236,224,0.15)';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('SlateMind', out.width - Math.round(14*s), out.height - Math.round(32*s));
-    ctx.restore();
-
-    // 7. Download as PNG
-    const doSave = (blob) => {
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href = url; a.download = name;
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    };
-
-    if (out.toBlob) {
-      out.toBlob(doSave, 'image/png');
+    const canvas = this.canvas;
+    const name   = `slatmind-${Date.now()}.png`;
+    if (canvas.toBlob) {
+      canvas.toBlob(blob => {
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url; a.download=name;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 'image/png');
     } else {
-      const a = document.createElement('a');
-      a.href = out.toDataURL('image/png'); a.download = name; a.click();
+      const a=document.createElement('a');
+      a.href=canvas.toDataURL('image/png'); a.download=name; a.click();
     }
   }
 

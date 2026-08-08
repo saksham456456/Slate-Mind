@@ -90,19 +90,8 @@ let wb            = null;
 let _audioCtx     = null;
 
 /* ══ 3. PERSISTENCE ════════════════════════════════════════════ */
-function load() {
-  try {
-    // Support both current key (pb_v2) and older key (pb_state_v2) for migration
-    const r = localStorage.getItem('pb_v2') || localStorage.getItem('pb_state_v2');
-    STATE = r ? { ...DEF, ...JSON.parse(r) } : { ...DEF };
-    // If migrating from old key, resave under new key and clean up old
-    if (!localStorage.getItem('pb_v2') && localStorage.getItem('pb_state_v2')) {
-      localStorage.setItem('pb_v2', localStorage.getItem('pb_state_v2'));
-      localStorage.removeItem('pb_state_v2');
-    }
-  } catch { STATE = { ...DEF }; }
-}
-function save() { try { localStorage.setItem('pb_v2', JSON.stringify(STATE)); } catch {} }
+function load()  { try { const r=localStorage.getItem('pb_v2'); STATE=r?{...DEF,...JSON.parse(r)}:{...DEF}; } catch { STATE={...DEF}; } }
+function save()  { try { localStorage.setItem('pb_v2',JSON.stringify(STATE)); } catch {} }
 
 /* ══ 4. XP & LEVELS ════════════════════════════════════════════ */
 function getLvl(xp) {
@@ -195,7 +184,7 @@ function showBadgeToast(b) {
 function updateHUD() {
   const {cur,nxt}=getLvl(STATE.totalXP);
   const p=getProgress();
-  el('playerNameDisplay').textContent = STATE.playerName || localStorage.getItem('pb_studentName') || 'Student';
+  el('playerNameDisplay').textContent = STATE.playerName;
   el('playerLevel').textContent       = `Lv ${cur.level}`;
   el('levelTitle').textContent        = cur.title;
   el('xpBarFill').style.width         = p.pct+'%';
@@ -363,10 +352,8 @@ function onLessonComplete(data,topic,isDaily) {
   // Prompt right sidebar if collapsed
   if (document.getElementById('rightSidebar').classList.contains('collapsed')) {
     el('rightOpenHudBtn').style.display='flex';
-    el('rsFloatTab').style.display='flex';
-    el('rsFloatTab').classList.add('has-content');
     setTimeout(()=>{
-      showGameNotif('📋','NOTES READY','Fun fact + quiz unlocked! →','purple',2500);
+      showGameNotif('📋','NOTES READY','Fun fact + quiz unlocked!','purple',2000);
     },1000);
   } else {
     // Auto-switch to quiz tab after lesson
@@ -751,11 +738,9 @@ function toggleFullscreen() {
   if (_fs) {
     el('leftOpenBtn').style.display='flex';
     el('rightOpenHudBtn').style.display='flex';
-    if (el('rsFloatTab')) el('rsFloatTab').style.display='flex';
   } else {
     el('leftOpenBtn').style.display='none';
     el('rightOpenHudBtn').style.display='none';
-    if (el('rsFloatTab')) el('rsFloatTab').style.display='none';
     el('leftSidebar').classList.remove('collapsed');
     el('rightSidebar').classList.remove('collapsed');
   }
@@ -796,25 +781,17 @@ function setupOnboarding() {
   sb.addEventListener('click',()=>{
     initAudio(); // lazy init on first real user gesture
     const name=(ni.value.trim()||'Student');
-    STATE.playerName = name;
-    STATE.hasOnboarded = true;
-    localStorage.setItem('pb_studentName', name); // quick-access key
-    save();   // also saves playerName inside pb_v2 STATE
-    updateHUD();
+    STATE.playerName=name; STATE.hasOnboarded=true;
+    localStorage.setItem('pb_studentName',name);
+    save(); updateHUD();
     closeModal('splashOverlay');
     sound('levelup');
     // Welcome notification
     setTimeout(()=>showGameNotif('🎓','WELCOME!',`Ready to learn, ${name}?`,'green',2500),500);
   });
-  // Only need hasOnboarded=true to skip splash — name already in STATE from load()
-  // Also check pb_studentName as a fallback if STATE.playerName got reset
-  const savedName = localStorage.getItem('pb_studentName');
-  if (savedName) STATE.playerName = savedName; // always prefer persisted name
-  if (STATE.hasOnboarded) {
-    closeModal('splashOverlay');
-  } else {
-    ni.focus();
-  }
+  const saved=localStorage.getItem('pb_studentName');
+  if (STATE.hasOnboarded&&saved) { STATE.playerName=saved; closeModal('splashOverlay'); }
+  else ni.focus();
 }
 
 /* ══ 26. WIRE EVENTS ═══════════════════════════════════════════ */
@@ -877,18 +854,10 @@ function wire() {
   el('rightCloseBtn').addEventListener('click',()=>{
     el('rightSidebar').classList.add('collapsed');
     el('rightOpenHudBtn').style.display='flex';
-    el('rsFloatTab').style.display='flex';
     setTimeout(()=>wb._resize(),280);
   });
   el('rightOpenHudBtn').addEventListener('click',()=>{
     el('rightSidebar').classList.remove('collapsed');
-    el('rightOpenHudBtn').style.display='none';
-    el('rsFloatTab').style.display='none';
-    setTimeout(()=>wb._resize(),280);
-  });
-  el('rsFloatTab').addEventListener('click',()=>{
-    el('rightSidebar').classList.remove('collapsed');
-    el('rsFloatTab').style.display='none';
     el('rightOpenHudBtn').style.display='none';
     setTimeout(()=>wb._resize(),280);
   });
@@ -935,10 +904,7 @@ function wire() {
     el('soundToggle').classList.toggle('off',!STATE.soundOn); save();
   });
   el('changeNameBtn').addEventListener('click',()=>{
-    localStorage.removeItem('pb_studentName');
-    STATE.hasOnboarded = false;
-    STATE.playerName   = 'Student';
-    save();
+    localStorage.removeItem('pb_studentName'); STATE.hasOnboarded=false; save();
     closeModal('settingsOverlay'); openModal('splashOverlay');
     el('studentNameInput').value='';
     setTimeout(()=>el('studentNameInput').focus(),300);
