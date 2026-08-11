@@ -509,8 +509,9 @@ function answerQ(chosen, q) {
     quizScore++;
     quizCombo++;
     STATE.quizCorrect++;
-    if (quizCombo > (STATE.maxCombo||0)) STATE.maxCombo=quizCombo;
+    if (quizCombo > (STATE.maxCombo || 0)) STATE.maxCombo = quizCombo;
     sound('correct');
+    if (quizCombo >= 2) sound('combo');
     // Combo notifications
     if (quizCombo===2) showGameNotif('⚡','NICE!','2 correct in a row','green',1600);
     if (quizCombo===3) { showGameNotif('🔥','COMBO x3!','You\'re on fire!','orange',2000); comboFlash(); }
@@ -680,40 +681,8 @@ function initAudio() {
 }
 
 function sound(type) {
-  if (!STATE.soundOn||!_audioCtx) return;
-  const ctx=_audioCtx, now=ctx.currentTime;
-  const beep=(f,t,vol=0.1,wave='sine',dur=0.3)=>{
-    const o=ctx.createOscillator(),g=ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.type=wave; o.frequency.setValueAtTime(f,now+t);
-    g.gain.setValueAtTime(vol,now+t);
-    g.gain.exponentialRampToValueAtTime(0.001,now+t+dur);
-    o.start(now+t); o.stop(now+t+dur);
-  };
-  switch(type) {
-    case 'start':
-      beep(440,0,.08,'sine',.15); beep(554,0.1,.08,'sine',.15); break;
-    case 'correct':
-      beep(523,0,.12,'sine',.12); beep(659,0.1,.12,'sine',.18); break;
-    case 'wrong':
-      beep(200,0,.07,'square',.22); break;
-    case 'complete':
-      beep(523,0,.1); beep(659,.12,.1); beep(784,.24,.1); break;
-    case 'perfect':
-      [523,659,784,1046].forEach((f,i)=>beep(f,i*.1,.09,'sine',.3)); break;
-    case 'levelup':
-      [261,329,392,523].forEach((f,i)=>beep(f,i*.12,.13,'sine',.25)); break;
-    case 'badge':
-      beep(880,0,.09,'triangle',.12); beep(1108,.08,.09,'triangle',.15); break;
-    case 'combo':
-      beep(659,0,.1,'sine',.1); beep(784,.08,.1,'sine',.1); beep(1046,.16,.13,'sine',.2); break;
-    case 'error':
-      beep(150,0,.07,'sawtooth',.25); break;
-    case 'checkpoint':
-      beep(440,0,.1,'sine',.4); break;
-    case 'xp':
-      beep(1000,0,.06,'sine',.12); break;
-  }
+  if (!STATE.soundOn || !window.SFX || typeof window.SFX[type] !== 'function') return;
+  window.SFX[type]();
 }
 
 /* ══ 22. CHECKPOINT ════════════════════════════════════════════ */
@@ -799,7 +768,11 @@ function wire() {
   /* Topic input */
   const ti=el('topicInput'), tb=el('teachBtn');
   ti.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();tb.click();} });
-  ti.addEventListener('input',()=>{ ti.classList.remove('error'); el('topicError').style.display='none'; });
+  ti.addEventListener('input',()=>{
+    ti.classList.remove('error');
+    el('topicError').style.display='none';
+    sound('type');
+  });
   tb.addEventListener('click',()=>{ const t=ti.value.trim(); startLesson(t); if(t)ti.value=''; });
 
   /* Suggestion chips */
@@ -810,6 +783,7 @@ function wire() {
   /* Ask bar */
   const ai=el('askInput'), ab=el('askBtn');
   ai.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();ab.click();} });
+  ai.addEventListener('input', () => sound('type'));
   ab.addEventListener('click',()=>{ const q=ai.value.trim(); if(q) askFollowUp(q); });
 
   /* Board controls */

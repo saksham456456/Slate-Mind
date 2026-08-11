@@ -559,10 +559,27 @@ class Whiteboard {
 
   /* ── Cross-browser image save ───────────────────────────── */
   saveAsImage() {
-    const canvas = this.canvas;
+    const source = this.canvas;
     const name   = `slatmind-${Date.now()}.png`;
-    if (canvas.toBlob) {
-      canvas.toBlob(blob => {
+
+    // Create an output canvas the same size as the source
+    const out = document.createElement('canvas');
+    out.width = source.width;
+    out.height = source.height;
+    const ctx = out.getContext('2d');
+
+    // Read dynamic background or fallback
+    const boardBg = getComputedStyle(document.documentElement).getPropertyValue('--bg-board').trim() || '#1a3a2a';
+
+    // Fill with the blackboard background colour first
+    ctx.fillStyle = boardBg;
+    ctx.fillRect(0, 0, out.width, out.height);
+
+    // Draw the chalk content on top
+    ctx.drawImage(source, 0, 0);
+
+    if (out.toBlob) {
+      out.toBlob(blob => {
         const url=URL.createObjectURL(blob);
         const a=document.createElement('a');
         a.href=url; a.download=name;
@@ -572,7 +589,7 @@ class Whiteboard {
       }, 'image/png');
     } else {
       const a=document.createElement('a');
-      a.href=canvas.toDataURL('image/png'); a.download=name; a.click();
+      a.href=out.toDataURL('image/png'); a.download=name; a.click();
     }
   }
 
