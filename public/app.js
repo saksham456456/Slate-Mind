@@ -457,7 +457,7 @@ function showTermsPanel(terms) {
   el('termsEmpty').style.display = 'none';
   el('glossaryList').innerHTML   = terms.map((t,i)=>`
     <div class="glossary-term">
-      <span class="term-word">${t}</span>
+      <span class="term-word">${esc(t)}</span>
       <span class="term-idx">#${i+1}</span>
     </div>`).join('');
   el('glossaryList').style.display='flex';
@@ -490,7 +490,7 @@ function renderQ() {
     if (!q.options[i]) return;
     const b=document.createElement('button');
     b.className='quiz-opt';
-    b.innerHTML=`<span class="opt-letter">${L}</span>${q.options[i]}`;
+    b.innerHTML=`<span class="opt-letter">${L}</span>${esc(q.options[i])}`;
     b.addEventListener('click',()=>answerQ(i,q));
     opts.appendChild(b);
   });
@@ -573,8 +573,8 @@ function renderHistory() {
     <div class="history-item${i===0?' active':''}" data-topic="${encodeURIComponent(h.topic)}">
       <span class="hi-icon">${ico[h.diff]||'📖'}</span>
       <div class="hi-info">
-        <div class="hi-topic">${h.topic}</div>
-        <div class="hi-meta">+${h.xp} XP · <span class="hi-diff diff-${h.diff}">${h.diff}</span></div>
+        <div class="hi-topic">${esc(h.topic)}</div>
+        <div class="hi-meta">+${h.xp} XP · <span class="hi-diff diff-${esc(h.diff)}">${esc(h.diff)}</span></div>
       </div>
     </div>`).join('');
   c.querySelectorAll('.history-item').forEach(item=>{
@@ -639,7 +639,7 @@ function renderLeaderboard() {
   el('lbList').innerHTML=all.map((s,i)=>`
     <div class="lb-row${s.isYou?' you':''}">
       <span class="lb-rank ${rc[i]||''}">${['🥇','🥈','🥉'][i]||(i+1)}</span>
-      <span class="lb-name">${s.name}${s.isYou?' (You)':''}</span>
+      <span class="lb-name">${esc(s.name)}${s.isYou?' (You)':''}</span>
       <span class="lb-xp">${s.xp} XP</span>
     </div>`).join('');
   const rank=all.findIndex(s=>s.isYou)+1;
@@ -750,6 +750,7 @@ function toggleFullscreen() {
 
 /* ══ 24. MISC ══════════════════════════════════════════════════ */
 function el(id){return document.getElementById(id);}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function openModal(id){document.getElementById(id)?.classList.add('active');}
 function closeModal(id){document.getElementById(id)?.classList.remove('active');}
 
@@ -761,7 +762,7 @@ function showProfMsg(msg) {
   t.innerHTML=`<div class="toast-icon">🎓</div>
     <div class="toast-info">
       <div class="toast-title">Professor Byte</div>
-      <div class="toast-desc">${msg}</div>
+      <div class="toast-desc">${esc(msg)}</div>
     </div>`;
   area.prepend(t);
   setTimeout(()=>t.remove(),5000);
@@ -835,7 +836,7 @@ function wire() {
     el('boardControls').style.display='none';
     setUIState('idle'); el('topicInput').focus();
   });
-  el('screenshotBtn').addEventListener('click',()=>wb.saveAsImage());
+  el('screenshotBtn').addEventListener('click',()=>wb.saveAsImage(el('metaTopic')?.textContent));
   el('boardFsBtn').addEventListener('click',toggleFullscreen);
   el('fullscreenBtn').addEventListener('click',toggleFullscreen);
 

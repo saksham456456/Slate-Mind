@@ -10,8 +10,10 @@ module.exports = async (req, res) => {
   }
 
   const { question, interactionId } = body || {};
-  if (!question?.trim()) return res.status(400).json({ error: 'question is required' });
-  if (!interactionId)    return res.status(400).json({ error: 'interactionId is required' });
+  if (typeof question !== 'string' || !question.trim()) return res.status(400).json({ error: 'question is required' });
+  if (question.length > 300) return res.status(400).json({ error: 'Question is too long' });
+  if (typeof interactionId !== 'string' || !interactionId) return res.status(400).json({ error: 'interactionId is required' });
+  if (interactionId.length > 60000) return res.status(400).json({ error: 'Invalid interactionId' });
 
   let history;
   try {
@@ -26,7 +28,7 @@ module.exports = async (req, res) => {
     res.json({ ...parsed, interactionId: newInteractionId });
   } catch (err) {
     console.error('[/api/ask]', err);
-    const status = err.name === 'AbortError' ? 504 : 500;
+    const status = err.status || (err.name === 'AbortError' ? 504 : 500);
     const message = err.name === 'AbortError'
       ? 'Request timed out. Please try again.'
       : (err.message || 'Unknown server error');
