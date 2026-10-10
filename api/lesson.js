@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON' }); }
   }
 
-  const topic = (body?.topic || '').trim();
+  const topic = (typeof body?.topic === 'string' ? body.topic : '').trim();
   if (!topic) return res.status(400).json({ error: 'Topic is required' });
   if (topic.length > 200) return res.status(400).json({ error: 'Topic is too long' });
 

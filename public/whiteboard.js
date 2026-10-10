@@ -557,22 +557,139 @@ class Whiteboard {
     return lines.length?lines:[''];
   }
 
-  /* ── Cross-browser image save ───────────────────────────── */
-  saveAsImage() {
-    const canvas = this.canvas;
-    const name   = `slatmind-${Date.now()}.png`;
-    if (canvas.toBlob) {
-      canvas.toBlob(blob => {
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');
-        a.href=url; a.download=name;
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+  /* ── Save image — full blackboard (background + chalk) ─── */
+
+  /** Row (physical px) just below the lowest drawn chalk pixel; 0 if board is empty */
+  _contentBottom() {
+    const c = this.canvas;
+    if (!c.width || !c.height) return 0;
+    let data;
+    try { data = this.ctx.getImageData(0, 0, c.width, c.height).data; }
+    catch { return c.height; }           // can't read pixels → keep everything
+    const w = c.width;
+    for (let y = c.height - 1; y >= 0; y--) {
+      const row = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        if (data[row + x * 4 + 3] > 12) return Math.min(c.height, y + 1);
+      }
+    }
+    return 0;
+  }
+
+  /** Build the finished picture: blackboard + chalk + wooden frame + tray */
+  _composeImage() {
+    const src = this.canvas;
+    const s   = this._scale();                  // physical px per virtual unit
+    const px  = v => Math.round(v * s);
+
+    const frame = px(10);                       // wooden frame thickness
+    const trayH = px(27);                       // chalk tray height
+    const boardW = src.width;
+
+    // Crop to the lesson: content + breathing room, never shorter than ~half the width
+    const bottom = this._contentBottom();
+    const minH   = Math.round(boardW * 0.5);
+    const boardH = Math.min(src.height, Math.max(minH, bottom + px(40)));
+
+    const out = document.createElement('canvas');
+    out.width  = boardW + frame * 2;
+    out.height = boardH + trayH + frame * 2;
+    const ctx = out.getContext('2d');
+
+    const bx = frame, by = frame;               // board origin
+
+    // 1. Wooden frame
+    ctx.fillStyle = '#3d2b1f';
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.strokeStyle = '#2a1f14';
+    ctx.lineWidth = px(3);
+    ctx.strokeRect(px(1.5), px(1.5), out.width - px(3), out.height - px(3));
+
+    // 2. Board surface + soft light patches (same as the on-screen board)
+    ctx.fillStyle = '#1a3a2a';
+    ctx.fillRect(bx, by, boardW, boardH);
+    const patch = (cx, cy, a) => {
+      const g = ctx.createRadialGradient(bx + boardW*cx, by + boardH*cy, 0,
+                                         bx + boardW*cx, by + boardH*cy, boardW*0.5);
+      g.addColorStop(0, `rgba(255,255,255,${a})`);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(bx, by, boardW, boardH);
+    };
+    patch(0.2, 0.2, 0.03);
+    patch(0.8, 0.8, 0.02);
+
+    // 3. Inner vignette (darker edges, like the on-screen inset shadow)
+    const vg = ctx.createRadialGradient(
+      bx + boardW/2, by + boardH/2, Math.min(boardW, boardH) * 0.35,
+      bx + boardW/2, by + boardH/2, Math.max(boardW, boardH) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.38)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(bx, by, boardW, boardH);
+
+    // 4. Chalk content (top of the board, cropped to boardH)
+    ctx.drawImage(src, 0, 0, boardW, boardH, bx, by, boardW, boardH);
+
+    // 5. Chalk tray
+    const ty = by + boardH;
+    const tg = ctx.createLinearGradient(0, ty, 0, ty + trayH);
+    tg.addColorStop(0, '#3d2b1f'); tg.addColorStop(1, '#2d1f12');
+    ctx.fillStyle = tg;
+    ctx.fillRect(bx, ty, boardW, trayH);
+    ctx.fillStyle = '#4a3520';
+    ctx.fillRect(bx, ty, boardW, px(2));
+
+    // 6. Chalk sticks in the tray
+    const sticks = [['#f0ece0','#d4cfbe'],['#f4d03f','#d4aa20'],['#58d68d','#27ae60'],
+                    ['#f1948a','#c0392b'],['#85c1e9','#2980b9']];
+    const sw = px(30), sh = px(9), sy = ty + Math.round((trayH - sh) / 2);
+    ctx.save(); ctx.globalAlpha = 0.7;
+    sticks.forEach(([c1, c2], i) => {
+      const x = bx + px(14) + i * (sw + px(7));
+      const g = ctx.createLinearGradient(x, 0, x + sw, 0);
+      g.addColorStop(0, c1); g.addColorStop(1, c2);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, sy, sw, sh, px(5));
+      else ctx.rect(x, sy, sw, sh);
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // 7. Brand mark in the tray
+    ctx.save();
+    ctx.font = `${px(15)}px ${FC}`;
+    ctx.fillStyle = 'rgba(240,236,224,0.55)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SlateMind', bx + boardW - px(14), ty + trayH / 2);
+    ctx.restore();
+
+    return out;
+  }
+
+  saveAsImage(title) {
+    let out;
+    try { out = this._composeImage(); }
+    catch (e) { console.error('[saveAsImage] compose failed, saving raw canvas', e); out = this.canvas; }
+
+    const slug = String(title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                   .replace(/^-+|-+$/g, '').slice(0, 30) || 'lesson';
+    const name = `slatemind-${slug}-${Date.now()}.png`;
+
+    const download = (href, revoke) => {
+      const a = document.createElement('a');
+      a.href = href; a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      if (revoke) setTimeout(() => URL.revokeObjectURL(href), 1500);
+    };
+    if (out.toBlob) {
+      out.toBlob(blob => {
+        if (blob) download(URL.createObjectURL(blob), true);
+        else download(out.toDataURL('image/png'), false);
       }, 'image/png');
     } else {
-      const a=document.createElement('a');
-      a.href=canvas.toDataURL('image/png'); a.download=name; a.click();
+      download(out.toDataURL('image/png'), false);
     }
   }
 
