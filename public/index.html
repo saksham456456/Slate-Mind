@@ -361,9 +361,26 @@
       <label>Student Name</label>
       <button class="btn-change-name" id="changeNameBtn">✏️ Change Name</button>
     </div>
+    <div class="setting-row">
+      <label>Teaching Style</label>
+      <div class="color-opts" id="styleOpts">
+        <button class="color-opt active" data-style="mentor">Friendly Mentor</button>
+        <button class="color-opt" data-style="coach">Strict Coach</button>
+        <button class="color-opt" data-style="eli10">ELI10</button>
+        <button class="color-opt" data-style="story">Storyteller</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>Data Backup &amp; Portability</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn-change-name" id="exportDataBtn">📥 Export Data</button>
+        <button class="btn-change-name" id="importDataBtn">📤 Import Data</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none"/>
+      </div>
+    </div>
     <div class="setting-row danger-row">
       <label>Reset Progress</label>
-      <button class="btn-danger" id="resetProgressBtn">⚠️ Reset All</button>
+      <button class="btn-danger" id="resetProgressBtn">⚠️ Clear My Data</button>
     </div>
   </div>
 </div>

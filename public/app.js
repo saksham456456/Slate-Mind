@@ -972,7 +972,52 @@ function wire() {
     setTimeout(()=>el('studentNameInput').focus(),300);
   });
   el('resetProgressBtn').addEventListener('click',()=>{
-    if(confirm('Reset ALL progress? This cannot be undone!')) { localStorage.clear(); location.reload(); }
+    if(confirm('Clear ALL local data? This cannot be undone!')) { localStorage.clear(); location.reload(); }
+  });
+
+  /* Export / Import Local Data (Module 3: Portable Profile) */
+  el('exportDataBtn')?.addEventListener('click', () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(STATE, null, 2));
+    const dl = document.createElement('a');
+    dl.setAttribute('href', dataStr);
+    dl.setAttribute('download', `slatemind-profile-${Date.now()}.json`);
+    dl.click();
+    showGameNotif('📥', 'DATA EXPORTED', 'Profile backup downloaded successfully', 'green', 2000);
+  });
+
+  const importFile = el('importFileInput');
+  el('importDataBtn')?.addEventListener('click', () => importFile?.click());
+  importFile?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (typeof imported === 'object' && imported !== null) {
+          STATE = { ...DEF, ...imported };
+          save();
+          updateHUD();
+          renderHistory();
+          showGameNotif('📤', 'DATA IMPORTED', 'Learning profile restored!', 'gold', 2500);
+          closeModal('settingsOverlay');
+        }
+      } catch (err) {
+        showProfMsg('Invalid profile JSON file.');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  /* Teaching Style Selection */
+  document.querySelectorAll('#styleOpts .color-opt').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#styleOpts .color-opt').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      STATE.teachStyle = b.dataset.style;
+      save();
+      showGameNotif('🎓', 'TEACHING STYLE', `Set to: ${b.textContent}`, 'purple', 1800);
+    });
   });
   document.querySelectorAll('.color-opt').forEach(b=>{
     b.addEventListener('click',()=>{
