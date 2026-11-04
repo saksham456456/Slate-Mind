@@ -1,10 +1,9 @@
 'use strict';
 require('dotenv').config();
 
-// ── API Key Guard ─────────────────────────────────────────────
+// ── API Key Notice (Informative, non-fatal for local dev) ──────
 if (!process.env.GROQ_API_KEY) {
-  console.error('❌ Missing GROQ_API_KEY — add it to .env or Vercel env vars');
-  if (require.main === module) process.exit(1);
+  console.warn('⚠️ GROQ_API_KEY not set — SlateMind will run in offline mode using sample & fallback curriculum.');
 }
 
 const express    = require('express');
@@ -30,7 +29,7 @@ app.use(cors({
 // ── Rate Limiting ─────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 15,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests — slow down! Try again in a minute.' },
@@ -45,6 +44,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/lesson', lesson);
 app.post('/api/ask',    ask);
 
+// Health check endpoint
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    hasKey: Boolean(process.env.GROQ_API_KEY),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ── 404 + SPA Fallback ────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
@@ -58,4 +66,4 @@ if (require.main === module) {
   );
 }
 
-module.exports = app; // Vercel serverless export
+module.exports = app;
