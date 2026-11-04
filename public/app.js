@@ -770,8 +770,12 @@ function showProfMsg(msg) {
 
 function applyTheme(theme) {
   const r=document.documentElement;
+  STATE.boardTheme = theme;
+  save();
   if (theme==='neon')   { r.style.setProperty('--bg-board','#050f1a'); r.style.setProperty('--chalk-white','#00ff88'); }
   else if(theme==='sunset'){ r.style.setProperty('--bg-board','#1a0f00'); r.style.setProperty('--chalk-white','#ffb347'); }
+  else if(theme==='slate'){ r.style.setProperty('--bg-board','#111418'); r.style.setProperty('--chalk-white','#f8fafc'); }
+  else if(theme==='whiteboard'){ r.style.setProperty('--bg-board','#f8fafc'); r.style.setProperty('--chalk-white','#0f172a'); }
   else                  { r.style.setProperty('--bg-board','#1a3a2a'); r.style.setProperty('--chalk-white','#f0ece0'); }
 }
 
@@ -941,6 +945,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.speed-opt').forEach(b=>b.classList.toggle('active',b.dataset.speed===STATE.writeSpeed));
   el('soundToggle').textContent=STATE.soundOn?'🔊 ON':'🔇 OFF';
   el('soundToggle').classList.toggle('off',!STATE.soundOn);
+  if (STATE.boardTheme) {
+    applyTheme(STATE.boardTheme);
+    document.querySelectorAll('.color-opt').forEach(b=>b.classList.toggle('active', b.dataset.theme===STATE.boardTheme));
+  }
 
   updateHUD(); renderHistory(); setupDailyChallenge();
   wire(); setupOnboarding();

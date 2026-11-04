@@ -8,6 +8,7 @@
 const CHALK = {
   white:'#f0ece0', yellow:'#f4d03f', green:'#58d68d',
   pink:'#f1948a',  blue:'#85c1e9',   orange:'#f0a500',
+  red:'#ef4444',
 };
 const SPEED = {
   slow:   {char:40, line:26},
@@ -173,6 +174,27 @@ class Whiteboard {
       case 'emphasize':  return this._emphasize(b);
       case 'diagram':    return this._diagram(b);
       case 'checkpoint': return this._checkpoint(b);
+      case 'erase':      return this._eraseArea(b);
+    }
+  }
+
+  /* ── Erase Block (Module 1: visible chalk eraser wipe) ── */
+  async _eraseArea(b) {
+    const s = this._scale(), ctx = this.ctx;
+    const wipeH = Math.max(40, (b.height || 100)) * s;
+    const targetY = (b.y !== undefined ? b.y : Math.max(0, this.cy - wipeH / s)) * s;
+    const steps = 14;
+    for (let i = 0; i < steps; i++) {
+      if (this._abort) return;
+      await this._waitResume();
+      const currentY = targetY + (i / steps) * wipeH;
+      ctx.save();
+      ctx.clearRect(0, currentY, this.canvas.width, (wipeH / steps) + 4 * s);
+      ctx.restore();
+      await this._delay(18);
+    }
+    if (b.resetCursor !== false) {
+      this.cy = targetY / s;
     }
   }
 
@@ -355,6 +377,27 @@ class Whiteboard {
     } else if (kind === 'line') {
       const fr = sh.from || [x,y], to = sh.to || [x+w,y+h];
       await this._strokePts(ctx, [[fr[0]*s,(oy+fr[1])*s],[to[0]*s,(oy+to[1])*s]]);
+    } else if (kind === 'table') {
+      // Chalk-drawn structured table
+      const rows = sh.rows || 2, cols = sh.cols || 2;
+      const rh = h / rows, cw = w / cols;
+      await this._rect(ctx, x * s, y * s, w * s, h * s, 4 * s);
+      for (let r = 1; r < rows; r++) {
+        await this._strokePts(ctx, [[x * s, (y + r * rh) * s], [(x + w) * s, (y + r * rh) * s]]);
+      }
+      for (let c = 1; c < cols; c++) {
+        await this._strokePts(ctx, [[(x + c * cw) * s, y * s], [(x + c * cw) * s, (y + h) * s]]);
+      }
+    } else if (kind === 'numberline') {
+      // Horizontal number line with tick marks
+      const midY = y + h / 2;
+      await this._strokePts(ctx, [[x * s, midY * s], [(x + w) * s, midY * s]]);
+      this._arrowHead(ctx, (x + w - 10) * s, midY * s, (x + w) * s, midY * s, 8 * s);
+      const ticks = sh.ticks || 5;
+      for (let ti = 0; ti < ticks; ti++) {
+        const tx = x + (ti / (ticks - 1)) * (w - 20) + 10;
+        await this._strokePts(ctx, [[tx * s, (midY - 8) * s], [tx * s, (midY + 8) * s]]);
+      }
     }
 
     if (label) {
@@ -400,7 +443,21 @@ class Whiteboard {
       ctx.clearRect((x - 2) * s, (y - 2) * s, mw, 48 * s);
       ctx.globalAlpha = 0.88 + Math.random() * 0.12;
       ctx.fillStyle   = color;
-      ctx.fillText(drawn, (x + (Math.random()-0.5)*0.4) * s, (y + (Math.random()-0.5)*0.4) * s);
+      const jx = (Math.random() - 0.5) * 0.45;
+      const jy = (Math.random() - 0.5) * 0.45;
+      ctx.fillText(drawn, (x + jx) * s, (y + jy) * s);
+
+      // Chalk dust particles
+      if (Math.random() < 0.25) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.2 + Math.random() * 0.3;
+        const curCharW = ctx.measureText(drawn).width;
+        const px = (x * s) + curCharW + (Math.random() - 0.5) * 8 * s;
+        const py = (y + 12) * s + (Math.random() - 0.5) * 14 * s;
+        ctx.fillRect(px, py, (0.8 + Math.random() * 1.2) * s, (0.8 + Math.random() * 1.2) * s);
+        ctx.restore();
+      }
 
       if (delay > 0) await this._delay(delay + Math.random() * 6 - 3);
     }

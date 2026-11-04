@@ -157,11 +157,12 @@
     <!-- The Blackboard -->
     <div class="board-frame" id="boardFrame">
       <div class="board-chalk-tray">
-        <div class="chalk white"></div>
-        <div class="chalk yellow"></div>
-        <div class="chalk green"></div>
-        <div class="chalk pink"></div>
-        <div class="chalk blue"></div>
+        <div class="chalk white" title="White: Main Idea"></div>
+        <div class="chalk yellow" title="Yellow: Key Terms"></div>
+        <div class="chalk blue" title="Blue: Examples"></div>
+        <div class="chalk green" title="Green: Steps & Solutions"></div>
+        <div class="chalk pink" title="Pink: Highlights"></div>
+        <div class="chalk-legend-hint">⚪ Main &bull; 🟡 Terms &bull; 🔵 Examples &bull; 🟢 Steps</div>
         <div class="eraser" title="Clear board">🧹</div>
       </div>
 
@@ -327,7 +328,9 @@
     <div class="setting-row">
       <label>Chalk Theme</label>
       <div class="color-opts">
-        <button class="color-opt active" data-theme="classic">Classic</button>
+        <button class="color-opt active" data-theme="classic">Classic Green</button>
+        <button class="color-opt" data-theme="slate" style="background:#111418;color:#e2e8f0">Black Slate</button>
+        <button class="color-opt" data-theme="whiteboard" style="background:#f8fafc;color:#0f172a">Whiteboard</button>
         <button class="color-opt" data-theme="neon" style="background:#0d1b2a;color:#00ff88">Neon</button>
         <button class="color-opt" data-theme="sunset" style="background:#2d1b00;color:#ffb347">Sunset</button>
       </div>

@@ -403,6 +403,7 @@ body {
 .chalk.green  { background:linear-gradient(90deg,#58d68d,#27ae60); }
 .chalk.pink   { background:linear-gradient(90deg,#f1948a,#c0392b); }
 .chalk.blue   { background:linear-gradient(90deg,#85c1e9,#2980b9); }
+.chalk-legend-hint { font-size:10px; color:rgba(240,236,224,.4); font-family:var(--font-game); letter-spacing:.5px; margin-left:8px; }
 .eraser { margin-left:auto; cursor:pointer; font-size:15px; opacity:.7; transition:opacity .2s; }
 .eraser:hover { opacity:1; }
 
