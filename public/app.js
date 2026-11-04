@@ -1185,5 +1185,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>showGameNotif('🔥',`${STATE.currentStreak} Day Streak!`,'Keep it alive today!','orange',3000),1500);
   }
 
+  // Register service worker for offline PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
   console.log('🎓 SlateMind v2.2 — All systems go!');
 });
