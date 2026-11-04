@@ -306,8 +306,12 @@ async function startLesson(topic, isDaily=false) {
     setUIState('writing');
     sound('start');
     showGameNotif('📖','LESSON STARTED',`Topic: ${topic.slice(0,30)}`,'green',1800);
+    speak(`Today we are learning about ${topic}`);
 
     await wb.renderLesson(data.blocks||[], {
+      onBlockDone: (idx, blk) => {
+        if (blk.text) speak(blk.text);
+      },
       onAllDone: ()=>onLessonComplete(data,topic,isDaily),
     });
 
@@ -789,6 +793,19 @@ function sound(type) {
   }
 }
 
+/* Module 7: Voice Narration (Web Speech Synthesis API) */
+function speak(text) {
+  if (!STATE.voiceOn || !window.speechSynthesis || !text) return;
+  try {
+    window.speechSynthesis.cancel();
+    const clean = text.replace(/[^a-zA-Z0-9\s.,?!]/g, ' ');
+    const u = new SpeechSynthesisUtterance(clean);
+    u.rate = 1.0;
+    u.pitch = 1.05;
+    window.speechSynthesis.speak(u);
+  } catch {}
+}
+
 /* ══ 22. CHECKPOINT ════════════════════════════════════════════ */
 function showCheckpoint(question,hint) {
   el('cpQuestion').textContent=question;
@@ -1058,6 +1075,13 @@ function wire() {
       document.querySelectorAll('.speed-opt').forEach(x=>x.classList.remove('active'));
       b.classList.add('active'); STATE.writeSpeed=b.dataset.speed; wb.setSpeed(b.dataset.speed); save();
     });
+  });
+  el('voiceToggle')?.addEventListener('click', () => {
+    STATE.voiceOn = !STATE.voiceOn;
+    el('voiceToggle').textContent = STATE.voiceOn ? '🗣️ ON' : '🔇 OFF';
+    el('voiceToggle').classList.toggle('off', !STATE.voiceOn);
+    save();
+    if (STATE.voiceOn) speak('Voice narration enabled.');
   });
   el('soundToggle').addEventListener('click',()=>{
     STATE.soundOn=!STATE.soundOn;
