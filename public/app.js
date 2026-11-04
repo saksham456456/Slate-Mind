@@ -914,6 +914,41 @@ function wire() {
     setUIState('idle'); el('topicInput').focus();
   });
   el('screenshotBtn').addEventListener('click',()=>wb.saveAsImage(el('metaTopic')?.textContent));
+  el('exportHtmlBtn')?.addEventListener('click', () => {
+    const topic = lastTopic || 'Lesson';
+    const fact = el('factText')?.textContent || '';
+    const dateStr = new Date().toLocaleDateString();
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>SlateMind Lesson — ${esc(topic)}</title>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a120b; color: #f0ece0; padding: 30px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+    h1 { color: #f4d03f; border-bottom: 2px dashed rgba(244,208,63,0.3); padding-bottom: 10px; }
+    .badge { display: inline-block; background: #1a3a2a; border: 1px solid #58d68d; color: #58d68d; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: bold; margin-bottom: 20px; }
+    .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 18px; margin: 16px 0; }
+    .fact { color: #85c1e9; font-style: italic; }
+    footer { margin-top: 40px; color: #888; font-size: 12px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; }
+  </style>
+</head>
+<body>
+  <div class="badge">SlateMind Standalone Lesson File</div>
+  <h1>🎓 ${esc(topic)}</h1>
+  <div class="card">
+    <h3>Fun Fact</h3>
+    <p class="fact">${esc(fact || 'Completed on ' + dateStr)}</p>
+  </div>
+  <footer>Exported offline via SlateMind • Local-first tool for learning and teaching</footer>
+</body>
+</html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const dl = document.createElement('a');
+    dl.href = URL.createObjectURL(blob);
+    dl.download = `slatemind-${topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+    dl.click();
+    showGameNotif('💾', 'LESSON FILE SAVED', 'Self-contained offline lesson downloaded', 'green', 2000);
+  });
   el('boardFsBtn').addEventListener('click',toggleFullscreen);
   el('fullscreenBtn').addEventListener('click',toggleFullscreen);
 
