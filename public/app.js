@@ -568,6 +568,69 @@ function showQuizResult() {
 
 function retryQuiz() { setupQuizPanel(currentQuiz); }
 
+/* Module 4: Shareable Mastery Progress Card */
+function generateProgressCard() {
+  const c = document.createElement('canvas');
+  c.width = 640;
+  c.height = 360;
+  const ctx = c.getContext('2d');
+
+  // Background Slate gradient
+  const bg = ctx.createLinearGradient(0, 0, 640, 360);
+  bg.addColorStop(0, '#1a3a2a');
+  bg.addColorStop(1, '#0e2319');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 640, 360);
+
+  // Border frame
+  ctx.strokeStyle = '#3d2b1f';
+  ctx.lineWidth = 12;
+  ctx.strokeRect(6, 6, 628, 348);
+
+  // Header Title
+  ctx.font = 'bold 28px "Orbitron", monospace';
+  ctx.fillStyle = '#f4c542';
+  ctx.textAlign = 'center';
+  ctx.fillText('SLATEMIND MASTERY CARD', 320, 60);
+
+  // Student & Level Info
+  ctx.font = '22px "Caveat", cursive';
+  ctx.fillStyle = '#f0ece0';
+  ctx.fillText(`Student: ${STATE.playerName}  •  Level ${STATE.level}`, 320, 105);
+
+  // Topic mastered
+  ctx.font = 'bold 26px "Caveat", cursive';
+  ctx.fillStyle = '#58d68d';
+  ctx.fillText(`Topic: "${lastTopic || 'Curiosity Explorer'}"`, 320, 155);
+
+  // Score & XP box
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(140, 185, 360, 80);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(140, 185, 360, 80);
+
+  ctx.font = '20px "Orbitron", monospace';
+  ctx.fillStyle = '#f4c542';
+  ctx.fillText(`Score: ${quizScore} / ${currentQuiz.length || 3}`, 320, 222);
+
+  ctx.font = '16px "Nunito", sans-serif';
+  ctx.fillStyle = '#85c1e9';
+  ctx.fillText(`Total XP: ${STATE.totalXP}  |  🔥 Streak: ${STATE.currentStreak} Days`, 320, 252);
+
+  // Footer Branding
+  ctx.font = '14px "Orbitron", monospace';
+  ctx.fillStyle = 'rgba(240,236,224,0.6)';
+  ctx.fillText('Powered by SlateMind — AI Blackboard Teacher', 320, 320);
+
+  // Download image
+  const dl = document.createElement('a');
+  dl.download = `slatemind-mastery-${Date.now()}.png`;
+  dl.href = c.toDataURL('image/png');
+  dl.click();
+  showGameNotif('🎴', 'PROGRESS CARD', 'Mastery card downloaded!', 'gold', 2000);
+}
+
 /* ══ 14. HISTORY ═══════════════════════════════════════════════ */
 function addToHistory(topic,data) {
   STATE.lessonHistory.unshift({id:Date.now(),topic,diff:data.difficulty||'Intermediate',xp:data.xpReward||80,ts:Date.now()});
@@ -888,6 +951,7 @@ function wire() {
   /* Quiz */
   el('quizNextBtn').addEventListener('click',nextQ);
   el('retryQuizBtn').addEventListener('click',retryQuiz);
+  el('shareProgressCardBtn')?.addEventListener('click', generateProgressCard);
 
   /* Feynman Explain-It-Back */
   el('feynmanSubmitBtn')?.addEventListener('click', async () => {
