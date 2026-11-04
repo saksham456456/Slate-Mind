@@ -228,6 +228,7 @@
         <button class="rs-tab active" data-tab="fact">🤯 Fact</button>
         <button class="rs-tab" data-tab="terms">📖 Terms</button>
         <button class="rs-tab" data-tab="quiz">🧠 Quiz</button>
+        <button class="rs-tab" data-tab="feynman" title="Explain it back (Feynman Mode)">💡 Explain</button>
       </div>
       <button class="collapse-btn" id="rightCloseBtn">✕</button>
     </div>
@@ -267,6 +268,27 @@
         <div class="result-msg" id="resultMsg"></div>
         <div class="result-xp" id="resultXP"></div>
         <button class="quiz-btn btn-retry" id="retryQuizBtn">🔄 Retry Quiz</button>
+      </div>
+    </div>
+
+    <div class="rs-panel" id="panel-feynman">
+      <div class="rs-empty" id="feynmanEmpty">Complete a lesson first to test your understanding! 💡</div>
+      <div id="feynmanInner" style="display:none">
+        <div class="feynman-header">
+          <span class="feynman-title">Explain-It-Back</span>
+          <span class="feynman-sub">Feynman Technique</span>
+        </div>
+        <p class="feynman-desc">Explain what you just learned in your own words. Professor Byte will grade your understanding!</p>
+        <textarea id="feynmanInput" class="feynman-textarea" placeholder="Explain the concept simply, as if teaching a friend..." rows="4"></textarea>
+        <button class="quiz-btn" id="feynmanSubmitBtn">Evaluate Understanding ➤</button>
+        <div id="feynmanResult" style="display:none" class="feynman-result-box">
+          <div class="feynman-score-row">
+            <span class="feynman-score-label">Understanding Score:</span>
+            <span id="feynmanScore" class="feynman-score-val">85%</span>
+          </div>
+          <div id="feynmanFeedback" class="feynman-feedback-text"></div>
+          <div id="feynmanXpEarned" class="result-xp"></div>
+        </div>
       </div>
     </div>
 

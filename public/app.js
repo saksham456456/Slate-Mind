@@ -340,6 +340,7 @@ function onLessonComplete(data,topic,isDaily) {
   showFactPanel(data.funFact);
   showTermsPanel(data.keyTerms);
   setupQuizPanel(data.quiz);
+  setupFeynmanPanel();
 
   // Show ask bar now that lesson is done
   el('askBar').style.display='block';
@@ -461,6 +462,15 @@ function showTermsPanel(terms) {
       <span class="term-idx">#${i+1}</span>
     </div>`).join('');
   el('glossaryList').style.display='flex';
+}
+
+function setupFeynmanPanel() {
+  const fEmpty = el('feynmanEmpty');
+  const fInner = el('feynmanInner');
+  if (fEmpty && fInner) {
+    fEmpty.style.display = 'none';
+    fInner.style.display = 'block';
+  }
 }
 
 /* ══ 13. QUIZ ══════════════════════════════════════════════════ */
@@ -878,6 +888,53 @@ function wire() {
   /* Quiz */
   el('quizNextBtn').addEventListener('click',nextQ);
   el('retryQuizBtn').addEventListener('click',retryQuiz);
+
+  /* Feynman Explain-It-Back */
+  el('feynmanSubmitBtn')?.addEventListener('click', async () => {
+    const input = el('feynmanInput');
+    const text = input ? input.value.trim() : '';
+    if (!text) {
+      if (input) input.focus();
+      return;
+    }
+    const btn = el('feynmanSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Evaluating…';
+
+    try {
+      const res = await fetch('/api/explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: lastTopic || 'Lesson', explanation: text })
+      });
+      const data = await res.json();
+
+      el('feynmanResult').style.display = 'block';
+      el('feynmanScore').textContent = `${data.score || 80}%`;
+      el('feynmanFeedback').textContent = data.feedback || 'Great job!';
+      if (data.xpReward) {
+        awardXP(data.xpReward, 'feynman');
+        el('feynmanXpEarned').textContent = `+${data.xpReward} XP earned!`;
+      }
+
+      // If there's a correction, chalk it visibly on the board in red
+      if (data.chalkCorrection && wb) {
+        await wb.appendBlocks([
+          { type: 'emphasize', text: `Key Correction: ${data.chalkCorrection}`, style: 'underline' }
+        ]);
+      }
+
+      sound('complete');
+      showGameNotif('💡', 'UNDERSTANDING RATED', `${data.score}% comprehension!`, 'gold', 2500);
+    } catch (err) {
+      el('feynmanResult').style.display = 'block';
+      el('feynmanScore').textContent = 'Completed!';
+      el('feynmanFeedback').textContent = 'Your explanation was reviewed. Keep practicing expressing concepts concisely.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Evaluate Understanding ➤';
+    }
+  });
 
   /* HUD buttons */
   el('badgesBtn').addEventListener('click',()=>{ renderBadges(); openModal('badgesOverlay'); });

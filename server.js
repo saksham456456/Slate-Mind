@@ -12,6 +12,7 @@ const cors       = require('cors');
 const rateLimit  = require('express-rate-limit');
 const lesson     = require('./api/lesson');
 const ask        = require('./api/ask');
+const explain    = require('./api/explain');
 
 const app = express();
 
@@ -41,8 +42,9 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── API Routes ────────────────────────────────────────────────
-app.post('/api/lesson', lesson);
-app.post('/api/ask',    ask);
+app.post('/api/lesson',  lesson);
+app.post('/api/ask',     ask);
+app.post('/api/explain', explain);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
