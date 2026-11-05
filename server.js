@@ -2,8 +2,9 @@
 require('dotenv').config();
 
 // ── API Key Notice (Informative, non-fatal for local dev) ──────
-if (!process.env.GROQ_API_KEY) {
-  console.warn('⚠️ GROQ_API_KEY not set — SlateMind will run in offline mode using sample & fallback curriculum.');
+const hasLiveAI = Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY);
+if (!hasLiveAI) {
+  console.warn('⚠️ Neither GROQ_API_KEY nor OPENAI_API_KEY set — SlateMind will run in offline mode using sample & fallback curriculum.');
 }
 
 const express    = require('express');
@@ -50,7 +51,11 @@ app.post('/api/explain', explain);
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    hasKey: Boolean(process.env.GROQ_API_KEY),
+    hasKey: Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY),
+    providers: {
+      groq: Boolean(process.env.GROQ_API_KEY),
+      openai: Boolean(process.env.OPENAI_API_KEY)
+    },
     timestamp: new Date().toISOString()
   });
 });

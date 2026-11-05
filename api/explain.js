@@ -1,6 +1,6 @@
 'use strict';
 const { z } = require('zod');
-const { groqChat, parseJSON, GROQ_API_KEY } = require('../lib/groq');
+const { aiChat, parseJSON, GROQ_API_KEY, OPENAI_API_KEY } = require('../lib/groq');
 
 const feynmanSchema = z.object({
   score: z.coerce.number().default(75),
@@ -25,8 +25,10 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'topic and explanation are required' });
   }
 
+  const hasLiveAI = Boolean(GROQ_API_KEY || OPENAI_API_KEY);
+
   // Fallback if no API key or offline
-  if (!GROQ_API_KEY) {
+  if (!hasLiveAI) {
     const wordCount = explanation.trim().split(/\s+/).length;
     const score = Math.min(95, Math.max(60, Math.round(50 + wordCount * 2.5)));
     const masteryLevel = score >= 85 ? 'Feynman Master' : score >= 70 ? 'Solid Grasp' : 'Developing';
@@ -59,7 +61,7 @@ Return ONLY valid JSON (no markdown):
 `.trim();
 
   try {
-    const raw = await groqChat([{ role: 'user', content: prompt }], 500);
+    const raw = await aiChat([{ role: 'user', content: prompt }], 500);
     const parsed = parseJSON(raw);
     const validated = feynmanSchema.parse(parsed);
     res.json(validated);

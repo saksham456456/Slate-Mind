@@ -99,6 +99,9 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       const body = await res.json();
       assert.equal(body.status, 'ok');
       assert.equal(typeof body.hasKey, 'boolean');
+      assert.equal(typeof body.providers, 'object');
+      assert.equal(typeof body.providers.groq, 'boolean');
+      assert.equal(typeof body.providers.openai, 'boolean');
       assert.ok(body.timestamp);
     });
   });
