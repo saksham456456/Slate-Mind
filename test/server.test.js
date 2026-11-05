@@ -32,6 +32,7 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       assert.match(text, /SlateMind/);
       assert.match(text, /audio\.js/);
       assert.match(text, /state\.js/);
+      assert.match(text, /samples\.js/);
       assert.match(text, /gamification\.js/);
       assert.match(text, /quiz\.js/);
       assert.match(text, /constellation\.js/);
@@ -51,6 +52,7 @@ describe('SlateMind Server & API Automated Test Suite', () => {
     const clientScripts = [
       { path: '/audio.js', expected: 'initAudio' },
       { path: '/state.js', expected: 'LEVELS' },
+      { path: '/samples.js', expected: 'SAMPLE_LESSONS' },
       { path: '/gamification.js', expected: 'awardXP' },
       { path: '/quiz.js', expected: 'setupQuizPanel' },
       { path: '/constellation.js', expected: 'renderConstellation' },
@@ -174,6 +176,35 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       const lesson = await res.json();
       assert.ok(lesson.title);
       assert.ok(lesson.blocks.length >= 3);
+    });
+
+    test('POST /api/lesson returns pre-created master lessons for all 10 try topics seamlessly', async () => {
+      const tryTopics = [
+        'Photosynthesis',
+        "Newton's Laws of Motion",
+        'The French Revolution',
+        'DNA and Genetics',
+        'Python Programming Basics',
+        'Algebra Quadratic Equations',
+        'How the Internet Works',
+        'Climate Change',
+        "Ohm's Law",
+        'The Water Cycle'
+      ];
+
+      for (const topic of tryTopics) {
+        const res = await fetch(`${baseUrl}/api/lesson`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic })
+        });
+        assert.equal(res.status, 200, `Topic "${topic}" should return 200`);
+        const lesson = await res.json();
+        assert.ok(lesson.title, `"${topic}" should have title`);
+        assert.ok(lesson.interactionId, `"${topic}" should have interactionId`);
+        assert.equal(lesson.quiz.length, 3, `"${topic}" should have 3 quiz questions`);
+        assert.ok(lesson.blocks.length >= 4, `"${topic}" should have rich blackboard blocks`);
+      }
     });
   });
 

@@ -5,6 +5,7 @@ const ASSETS = [
   '/style.css',
   '/audio.js',
   '/state.js',
+  '/samples.js',
   '/gamification.js',
   '/quiz.js',
   '/constellation.js',

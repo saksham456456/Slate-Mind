@@ -66,6 +66,32 @@ async function startLesson(topic, isDaily = false) {
     });
 
   } catch (err) {
+    // If network or server unavailable, seamlessly utilize client pre-created sample without alerting user
+    const offlineSample = (typeof getSampleLesson === 'function') ? getSampleLesson(topic) : null;
+    if (offlineSample) {
+      el('boardLoading').style.display = 'none';
+      showLessonMeta(topic, offlineSample);
+      wb = wb || window.wb;
+      if (!wb && typeof Whiteboard !== 'undefined') {
+        wb = new Whiteboard('boardCanvas');
+        window.wb = wb;
+      }
+      if (wb) {
+        wb.clear();
+        wb.setSpeed(STATE.writeSpeed);
+      }
+      if (STATE.writeSpeed === 'fast' || STATE.writeSpeed === 'instant') STATE.fastLessons++;
+
+      setUIState('writing');
+      if (window.sound) sound('start');
+      showGameNotif('📖', 'LESSON STARTED', `Topic: ${topic.slice(0, 30)}`, 'green', 1800);
+
+      await wb.renderLesson(offlineSample.blocks || [], {
+        onAllDone: () => onLessonComplete(offlineSample, topic, isDaily),
+      });
+      return;
+    }
+
     el('boardLoading').style.display = 'none';
     showError(err.name === 'AbortError'
       ? 'Request timed out — please try again.'
