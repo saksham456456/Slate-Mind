@@ -8,6 +8,7 @@ const ASSETS = [
   '/gamification.js',
   '/quiz.js',
   '/constellation.js',
+  '/tour.js',
   '/whiteboard.js',
   '/app.js',
   '/manifest.json'

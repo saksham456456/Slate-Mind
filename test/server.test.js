@@ -35,6 +35,7 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       assert.match(text, /gamification\.js/);
       assert.match(text, /quiz\.js/);
       assert.match(text, /constellation\.js/);
+      assert.match(text, /tour\.js/);
       assert.match(text, /whiteboard\.js/);
       assert.match(text, /app\.js/);
     });
@@ -53,6 +54,7 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       { path: '/gamification.js', expected: 'awardXP' },
       { path: '/quiz.js', expected: 'setupQuizPanel' },
       { path: '/constellation.js', expected: 'renderConstellation' },
+      { path: '/tour.js', expected: 'startAppTour' },
       { path: '/whiteboard.js', expected: 'Whiteboard' },
       { path: '/app.js', expected: 'startLesson' },
     ];

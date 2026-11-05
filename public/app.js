@@ -691,13 +691,11 @@ function wire() {
     showGameNotif('📜', 'AUTO-SCROLL', STATE.autoScroll ? 'Following chalk writing' : 'Auto-scroll paused', 'purple', 1500);
   });
 
-  /* Settings: Replay Tour */
-  el('replayTourBtn')?.addEventListener('click', () => {
+  /* Settings: Start Interactive Demo Tour */
+  el('startTourBtn')?.addEventListener('click', () => {
     closeModal('settingsOverlay');
-    openModal('splashOverlay');
-    if (el('studentNameInput')) {
-      el('studentNameInput').value = STATE.playerName || 'Student';
-      el('studentNameInput').focus();
+    if (window.startAppTour) {
+      window.startAppTour();
     }
   });
 
