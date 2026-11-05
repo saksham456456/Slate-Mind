@@ -46,8 +46,15 @@ async function startLesson(topic, isDaily = false) {
 
     el('boardLoading').style.display = 'none';
     showLessonMeta(topic, data);
-    wb.clear();
-    wb.setSpeed(STATE.writeSpeed);
+    wb = wb || window.wb;
+    if (!wb && typeof Whiteboard !== 'undefined') {
+      wb = new Whiteboard('boardCanvas');
+      window.wb = wb;
+    }
+    if (wb) {
+      wb.clear();
+      wb.setSpeed(STATE.writeSpeed);
+    }
     if (STATE.writeSpeed === 'fast' || STATE.writeSpeed === 'instant') STATE.fastLessons++;
 
     setUIState('writing');
@@ -241,8 +248,15 @@ async function loadHistoryLesson(h) {
     window.interactionId = data.interactionId || null;
     window.currentQuiz = data.quiz || [];
     showLessonMeta(topic, data);
-    wb.clear();
-    wb.setSpeed(STATE.writeSpeed);
+    wb = wb || window.wb;
+    if (!wb && typeof Whiteboard !== 'undefined') {
+      wb = new Whiteboard('boardCanvas');
+      window.wb = wb;
+    }
+    if (wb) {
+      wb.clear();
+      wb.setSpeed(STATE.writeSpeed);
+    }
     setUIState('writing');
     if (window.sound) sound('start');
     showGameNotif('📖', 'LESSON RESTORED', `Loaded: ${topic.slice(0, 30)}`, 'green', 1500);
@@ -470,7 +484,8 @@ function wire() {
     }
   });
   el('clearBtn').addEventListener('click', () => {
-    wb.clear();
+    wb = wb || window.wb;
+    if (wb) wb.clear();
     window.interactionId = null;
     el('boardIdle').style.display = 'flex';
     el('boardIdle').querySelector('.idle-text').textContent = 'Professor Byte is ready to teach!';
@@ -761,8 +776,9 @@ function wire() {
 /* ── Bootstrap Initialization ─────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   load();
-  window.wb = new Whiteboard('boardCanvas');
-  window.wb.setSpeed(STATE.writeSpeed || 'normal');
+  wb = new Whiteboard('boardCanvas');
+  window.wb = wb;
+  wb.setSpeed(STATE.writeSpeed || 'normal');
 
   // Sync settings UI
   if (el('settingNameInput')) el('settingNameInput').value = STATE.playerName || 'Student';

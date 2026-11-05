@@ -96,15 +96,15 @@ const DEF = {
 };
 
 /* ── Mutable Application State ────────────────────────────────── */
-let STATE = {};
-let interactionId = null;
-let currentQuiz = [];
-let quizIndex = 0;
-let quizScore = 0;
-let quizCombo = 0;
-let lastTopic = '';
-let currentRabbitHoles = [];
-let wb = null;
+var STATE = {};
+var interactionId = null;
+var currentQuiz = [];
+var quizIndex = 0;
+var quizScore = 0;
+var quizCombo = 0;
+var lastTopic = '';
+var currentRabbitHoles = [];
+var wb = null;
 
 /* ── State Persistence & DOM Helpers ──────────────────────────── */
 function load() {
