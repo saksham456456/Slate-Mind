@@ -637,9 +637,61 @@ function generateProgressCard() {
 
 /* ══ 14. HISTORY ═══════════════════════════════════════════════ */
 function addToHistory(topic,data) {
-  STATE.lessonHistory.unshift({id:Date.now(),topic,diff:data.difficulty||'Intermediate',xp:data.xpReward||80,ts:Date.now()});
+  const entry = {
+    id: Date.now(),
+    topic,
+    diff: data.difficulty || 'Intermediate',
+    xp: data.xpReward || 80,
+    ts: Date.now(),
+    data: {
+      title: data.title || topic,
+      difficulty: data.difficulty || 'Intermediate',
+      xpReward: data.xpReward || 80,
+      funFact: data.funFact || '',
+      keyTerms: data.keyTerms || [],
+      quiz: data.quiz || [],
+      blocks: data.blocks || [],
+      interactionId: data.interactionId || null
+    }
+  };
+  STATE.lessonHistory.unshift(entry);
   if (STATE.lessonHistory.length>50) STATE.lessonHistory.pop();
   save(); renderHistory();
+}
+
+async function loadHistoryLesson(h) {
+  if (!h || !h.topic) return;
+  const topic = h.topic;
+  lastTopic = topic;
+  el('topicInput').value = topic;
+
+  if (h.data && Array.isArray(h.data.blocks) && h.data.blocks.length > 0) {
+    const data = h.data;
+    interactionId = data.interactionId || null;
+    currentQuiz = data.quiz || [];
+    showLessonMeta(topic, data);
+    wb.clear();
+    wb.setSpeed(STATE.writeSpeed);
+    setUIState('writing');
+    sound('start');
+    showGameNotif('📖', 'LESSON RESTORED', `Loaded: ${topic.slice(0, 30)}`, 'green', 1500);
+
+    await wb.renderLesson(data.blocks, {
+      onAllDone: () => {
+        showFactPanel(data.funFact);
+        showTermsPanel(data.keyTerms);
+        setupQuizPanel(data.quiz);
+        setupFeynmanPanel();
+        el('askBar').style.display = 'block';
+        populateAskChips();
+        setUIState('done');
+        sound('complete');
+      }
+    });
+  } else {
+    // Fallback for legacy history without saved data
+    startLesson(topic);
+  }
 }
 
 function renderHistory() {
@@ -647,7 +699,7 @@ function renderHistory() {
   if (!STATE.lessonHistory.length) { c.innerHTML='<div class="history-empty">No lessons yet! 👆</div>'; return; }
   const ico={Beginner:'🟢',Intermediate:'🟡',Advanced:'🔴'};
   c.innerHTML=STATE.lessonHistory.slice(0,20).map((h,i)=>`
-    <div class="history-item${i===0?' active':''}" data-topic="${encodeURIComponent(h.topic)}">
+    <div class="history-item${i===0?' active':''}" data-idx="${i}">
       <span class="hi-icon">${ico[h.diff]||'📖'}</span>
       <div class="hi-info">
         <div class="hi-topic">${esc(h.topic)}</div>
@@ -656,11 +708,11 @@ function renderHistory() {
     </div>`).join('');
   c.querySelectorAll('.history-item').forEach(item=>{
     item.addEventListener('click',()=>{
-      const topic=decodeURIComponent(item.dataset.topic);
-      el('topicInput').value=topic;
+      const idx = parseInt(item.dataset.idx, 10);
       c.querySelectorAll('.history-item').forEach(i=>i.classList.remove('active'));
       item.classList.add('active');
-      el('topicInput').focus();
+      const histItem = STATE.lessonHistory[idx];
+      loadHistoryLesson(histItem);
     });
   });
 }
@@ -1006,6 +1058,14 @@ function wire() {
   el('shareProgressCardBtn')?.addEventListener('click', generateProgressCard);
 
   /* Feynman Explain-It-Back */
+  const fInput = el('feynmanInput');
+  fInput?.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      el('feynmanSubmitBtn')?.click();
+    }
+  });
+
   el('feynmanSubmitBtn')?.addEventListener('click', async () => {
     const input = el('feynmanInput');
     const text = input ? input.value.trim() : '';
@@ -1049,6 +1109,35 @@ function wire() {
     } finally {
       btn.disabled = false;
       btn.textContent = 'Evaluate Understanding ➤';
+    }
+  });
+
+  /* Global Keyboard Shortcuts (Esc to close modals, Space to pause/resume board) */
+  window.addEventListener('keydown', e => {
+    // 1. Escape: Close any open modal overlay
+    if (e.key === 'Escape') {
+      const activeModals = document.querySelectorAll('.modal-overlay.active');
+      activeModals.forEach(o => {
+        if (o.id !== 'splashOverlay' || STATE.hasOnboarded) {
+          closeModal(o.id);
+          if (o.id === 'checkpointOverlay' && wb) wb.setPaused(false);
+        }
+      });
+      return;
+    }
+
+    // 2. Spacebar: Pause / Resume blackboard writing (ignore when typing in input or textarea)
+    const activeEl = document.activeElement;
+    const tag = activeEl ? activeEl.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || activeEl?.isContentEditable) return;
+
+    if (e.code === 'Space' && wb && wb.isWriting()) {
+      e.preventDefault();
+      const p = !wb._paused;
+      wb.setPaused(p);
+      const pauseBtn = el('pauseBtn');
+      if (pauseBtn) pauseBtn.textContent = p ? '▶ Resume' : '⏸ Pause';
+      showGameNotif(p ? '⏸' : '▶', p ? 'PAUSED' : 'RESUMED', p ? 'Board writing paused' : 'Continuing blackboard', 'purple', 1000);
     }
   });
 
