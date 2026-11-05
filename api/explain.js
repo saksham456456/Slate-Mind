@@ -1,5 +1,6 @@
 'use strict';
 const { z } = require('zod');
+const { groqChat, parseJSON, GROQ_API_KEY } = require('../lib/groq');
 
 const feynmanSchema = z.object({
   score: z.coerce.number().default(75),
@@ -23,10 +24,6 @@ module.exports = async (req, res) => {
   if (!topic || !explanation) {
     return res.status(400).json({ error: 'topic and explanation are required' });
   }
-
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
-  const GROQ_MODEL   = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-  const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
   // Fallback if no API key or offline
   if (!GROQ_API_KEY) {
@@ -62,32 +59,22 @@ Return ONLY valid JSON (no markdown):
 `.trim();
 
   try {
-    const r = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        max_tokens: 500,
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!r.ok) throw new Error(`Groq ${r.status}`);
-    const data = await r.json();
-    const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    const raw = await groqChat([{ role: 'user', content: prompt }], 500);
+    const parsed = parseJSON(raw);
     const validated = feynmanSchema.parse(parsed);
     res.json(validated);
   } catch (err) {
     const wordCount = explanation.trim().split(/\s+/).length;
     const score = Math.min(92, Math.max(65, Math.round(55 + wordCount * 2)));
+    const masteryLevel = score >= 85 ? 'Feynman Master' : score >= 70 ? 'Solid Grasp' : 'Developing';
     res.json({
       score,
+      masteryLevel,
       strengths: ['Identified main concept'],
       gaps: ['Could elaborate on specific applications'],
       feedback: `Good effort explaining ${topic.slice(0, 30)}! Keep strengthening your technical vocabulary.`,
       xpReward: Math.round(score * 0.35),
-      chalkCorrection: 'Key insight: Fundamental principles drive every practical application.'
+      chalkCorrection: score < 85 ? 'Key insight: Fundamental principles drive every practical application.' : ''
     });
   }
 };

@@ -1,10 +1,15 @@
-const CACHE_NAME = 'slatemind-v1';
+const CACHE_NAME = 'slatemind-v2';
 const ASSETS = [
   '/',
   '/index.html',
   '/style.css',
-  '/app.js',
+  '/audio.js',
+  '/state.js',
+  '/gamification.js',
+  '/quiz.js',
+  '/constellation.js',
   '/whiteboard.js',
+  '/app.js',
   '/manifest.json'
 ];
 
