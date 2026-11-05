@@ -491,6 +491,26 @@ body {
 }
 .ask-chip:hover { background:rgba(0,229,160,.09); border-color:var(--accent); color:var(--accent); }
 
+.rabbit-hole-chip {
+  background:rgba(124,58,237,.14) !important;
+  border:1px solid rgba(124,58,237,.38) !important;
+  color:#d8b4fe !important;
+  padding:4px 10px !important;
+  font-weight:500;
+  transition:all .18s ease;
+}
+.rabbit-hole-chip:hover {
+  background:rgba(124,58,237,.28) !important;
+  border-color:#c084fc !important;
+  color:#fff !important;
+  transform:translateY(-1px);
+  box-shadow:0 3px 10px rgba(124,58,237,.35);
+}
+.rh-dot {
+  color:var(--xp-gold);
+  margin-right:3px;
+}
+
 /* Ask status bar */
 .ask-status {
   background:rgba(0,229,160,.07); border-top:1px solid rgba(0,229,160,.15);

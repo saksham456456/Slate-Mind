@@ -348,7 +348,7 @@ function onLessonComplete(data,topic,isDaily) {
 
   // Show ask bar now that lesson is done
   el('askBar').style.display='block';
-  populateAskChips();
+  populateAskChips(data.rabbitHoles);
   setUIState('done');
   checkBadges();
   sound('complete');
@@ -649,6 +649,7 @@ function addToHistory(topic,data) {
       xpReward: data.xpReward || 80,
       funFact: data.funFact || '',
       keyTerms: data.keyTerms || [],
+      rabbitHoles: data.rabbitHoles || [],
       quiz: data.quiz || [],
       blocks: data.blocks || [],
       interactionId: data.interactionId || null
@@ -683,7 +684,7 @@ async function loadHistoryLesson(h) {
         setupQuizPanel(data.quiz);
         setupFeynmanPanel();
         el('askBar').style.display = 'block';
-        populateAskChips();
+        populateAskChips(data.rabbitHoles);
         setUIState('done');
         sound('complete');
       }
@@ -734,11 +735,37 @@ function setupDailyChallenge() {
   };
 }
 
-/* ══ 16. ASK CHIPS ════════════════════════════════════════════ */
-function populateAskChips() {
-  el('askChips').innerHTML=FOLLOW_UP_CHIPS.map(c=>`<button class="ask-chip">${c}</button>`).join('');
-  el('askChips').querySelectorAll('.ask-chip').forEach(b=>{
-    b.addEventListener('click',()=>{ el('askInput').value=b.textContent; el('askInput').focus(); });
+/* ══ 16. CURIOSITY RABBIT HOLES ══════════════════════════════ */
+let currentRabbitHoles = [];
+
+function populateAskChips(rabbitHoles) {
+  if (Array.isArray(rabbitHoles) && rabbitHoles.length > 0) {
+    currentRabbitHoles = rabbitHoles;
+  }
+  const chips = (currentRabbitHoles && currentRabbitHoles.length > 0)
+    ? currentRabbitHoles
+    : FOLLOW_UP_CHIPS.slice(0, 3);
+
+  const label = el('askBarLabel');
+  if (label) {
+    label.innerHTML = '🕳️ <strong>Curiosity Rabbit Holes</strong> <span style="font-size:10px;color:#a89b90;font-weight:normal">(Click to explore on blackboard)</span>:';
+  }
+
+  el('askChips').innerHTML = chips.map(c => `
+    <button class="ask-chip rabbit-hole-chip" title="Explore on blackboard">
+      <span class="rh-dot">✦</span> ${esc(c)}
+    </button>
+  `).join('');
+
+  el('askChips').querySelectorAll('.ask-chip').forEach(b => {
+    b.addEventListener('click', () => {
+      const q = b.textContent.replace(/^[✦\s]+/, '').trim();
+      if (!q) return;
+      el('askInput').value = q;
+      sound('btn');
+      showGameNotif('🕳️', 'RABBIT HOLE OPENED', `Investigating: "${q.slice(0, 30)}..."`, 'purple', 1800);
+      askFollowUp(q);
+    });
   });
 }
 
