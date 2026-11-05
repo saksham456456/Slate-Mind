@@ -88,6 +88,8 @@ const DEF = {
   soundOn: true,
   writeSpeed: 'normal',
   boardTheme: 'classic',
+  teachStyle: 'mentor',
+  autoScroll: true,
   hasOnboarded: false,
   dailyChallengeDate: null,
   dailyChallengeDone: false,

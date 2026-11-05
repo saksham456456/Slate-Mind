@@ -158,6 +158,18 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       assert.ok(lesson.interactionId, 'Must return base64 interactionId');
       interactionId = lesson.interactionId;
     });
+
+    test('POST /api/lesson accepts and processes custom teachStyle persona', async () => {
+      const res = await fetch(`${baseUrl}/api/lesson`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: 'Newton\'s Laws', teachStyle: 'coach' })
+      });
+      assert.equal(res.status, 200);
+      const lesson = await res.json();
+      assert.ok(lesson.title);
+      assert.ok(lesson.blocks.length >= 3);
+    });
   });
 
   describe('4. Follow-Up Question API (/api/ask)', () => {

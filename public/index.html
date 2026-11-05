@@ -364,58 +364,172 @@
 <div class="modal-overlay" id="settingsOverlay">
   <div class="modal settings-modal">
     <button class="modal-close" data-close="settingsOverlay">✕</button>
-    <h2 class="modal-title">⚙️ Settings</h2>
-    <div class="setting-row">
-      <label>Writing Speed</label>
-      <div class="speed-btns">
-        <button class="speed-opt" data-speed="slow">🐢 Slow</button>
-        <button class="speed-opt active" data-speed="normal">🚶 Normal</button>
-        <button class="speed-opt" data-speed="fast">🐇 Fast</button>
-        <button class="speed-opt" data-speed="instant">⚡ Instant</button>
+    <div class="settings-header">
+      <h2 class="modal-title" style="margin-bottom:3px">⚙️ Studio Settings</h2>
+      <p class="settings-subtitle">Customize blackboard aesthetics, teacher persona, and learning preferences</p>
+    </div>
+
+    <!-- Section 1: Learner & Persona -->
+    <div class="settings-section">
+      <div class="settings-sec-title">🎓 Student &amp; Teaching Persona</div>
+
+      <!-- Student Name Inline -->
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Student Name</label>
+          <span class="setting-desc">Displayed on HUD and blackboard mastery progress certificates</span>
+        </div>
+        <div class="setting-inline-group">
+          <input type="text" id="settingNameInput" class="setting-text-input" placeholder="Your name" maxlength="24" />
+          <button class="btn-setting-save" id="saveNameBtn">Save</button>
+        </div>
+      </div>
+
+      <!-- Teacher Persona Styles -->
+      <div class="setting-row col-layout">
+        <div class="setting-info">
+          <label>Professor Byte's Teaching Persona</label>
+          <span class="setting-desc">Directly alters AI tone, analogies, and pedagogy on the blackboard</span>
+        </div>
+        <div class="style-grid" id="styleOpts">
+          <button class="style-card active" data-style="mentor">
+            <span class="sc-icon">🤝</span>
+            <div class="sc-body">
+              <div class="sc-title">Friendly Mentor</div>
+              <div class="sc-desc">Encouraging, intuitive &amp; celebrating curiosity</div>
+            </div>
+          </button>
+          <button class="style-card" data-style="coach">
+            <span class="sc-icon">🎯</span>
+            <div class="sc-body">
+              <div class="sc-title">Strict Coach</div>
+              <div class="sc-desc">Rigorous, demanding precision &amp; zero fluff</div>
+            </div>
+          </button>
+          <button class="style-card" data-style="eli10">
+            <span class="sc-icon">💡</span>
+            <div class="sc-body">
+              <div class="sc-title">ELI10 Simplifier</div>
+              <div class="sc-desc">Everyday analogies &amp; zero academic jargon</div>
+            </div>
+          </button>
+          <button class="style-card" data-style="story">
+            <span class="sc-icon">📜</span>
+            <div class="sc-body">
+              <div class="sc-title">Storyteller</div>
+              <div class="sc-desc">Historic discovery, drama &amp; narrative arcs</div>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
-    <div class="setting-row">
-      <label>Sound Effects</label>
-      <button class="toggle-btn" id="soundToggle">🔊 ON</button>
-    </div>
-    <div class="setting-row">
-      <label>Chalk Theme</label>
-      <div class="color-opts">
-        <button class="color-opt active" data-theme="classic">Classic Green</button>
-        <button class="color-opt" data-theme="slate" style="background:#111418;color:#e2e8f0">Black Slate</button>
-        <button class="color-opt" data-theme="whiteboard" style="background:#f8fafc;color:#0f172a">Whiteboard</button>
-        <button class="color-opt" data-theme="neon" style="background:#0d1b2a;color:#00ff88">Neon</button>
-        <button class="color-opt" data-theme="sunset" style="background:#2d1b00;color:#ffb347">Sunset</button>
+
+    <!-- Section 2: Board & Aesthetics -->
+    <div class="settings-section">
+      <div class="settings-sec-title">🎨 Blackboard Aesthetics</div>
+
+      <!-- Surface Theme -->
+      <div class="setting-row col-layout">
+        <div class="setting-info">
+          <label>Blackboard Surface</label>
+          <span class="setting-desc">Sets slate color, dust contrast, and exported image theme</span>
+        </div>
+        <div class="theme-grid">
+          <button class="theme-card active" data-theme="classic">
+            <span class="tc-dot" style="background:#1a3a2a"></span>
+            <span class="tc-label">Classic Green</span>
+          </button>
+          <button class="theme-card" data-theme="slate">
+            <span class="tc-dot" style="background:#111418"></span>
+            <span class="tc-label">Black Slate</span>
+          </button>
+          <button class="theme-card" data-theme="whiteboard">
+            <span class="tc-dot" style="background:#f8fafc;border:1px solid #aaa"></span>
+            <span class="tc-label">Whiteboard</span>
+          </button>
+          <button class="theme-card" data-theme="neon">
+            <span class="tc-dot" style="background:#050f1a;border:1px solid #00ff88"></span>
+            <span class="tc-label">Cyber Neon</span>
+          </button>
+          <button class="theme-card" data-theme="sunset">
+            <span class="tc-dot" style="background:#1a0f00;border:1px solid #ffb347"></span>
+            <span class="tc-label">Sunset Amber</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Writing Speed -->
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Chalk Writing Speed</label>
+          <span class="setting-desc">Pacing of procedural handwriting strokes</span>
+        </div>
+        <div class="speed-btns">
+          <button class="speed-opt" data-speed="slow">🐢 Slow</button>
+          <button class="speed-opt active" data-speed="normal">🚶 Normal</button>
+          <button class="speed-opt" data-speed="fast">🐇 Fast</button>
+          <button class="speed-opt" data-speed="instant">⚡ Instant</button>
+        </div>
       </div>
     </div>
-    <div class="setting-row">
-      <label>Student Name</label>
-      <button class="btn-change-name" id="changeNameBtn">✏️ Change Name</button>
-    </div>
-    <div class="setting-row">
-      <label>Teaching Style</label>
-      <div class="color-opts" id="styleOpts">
-        <button class="color-opt active" data-style="mentor">Friendly Mentor</button>
-        <button class="color-opt" data-style="coach">Strict Coach</button>
-        <button class="color-opt" data-style="eli10">ELI10</button>
-        <button class="color-opt" data-style="story">Storyteller</button>
+
+    <!-- Section 3: Acoustics & Dynamics -->
+    <div class="settings-section">
+      <div class="settings-sec-title">🔊 Dynamics &amp; Acoustics</div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Chalk Audio &amp; Sound FX</label>
+          <span class="setting-desc">Synthesized chalk friction noise and game SFX</span>
+        </div>
+        <button class="toggle-btn" id="soundToggle">🔊 ON</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Auto-Scroll to Chalk</label>
+          <span class="setting-desc">Smoothly keep active writing line centered on screen</span>
+        </div>
+        <button class="toggle-btn" id="autoScrollToggle">📜 ON</button>
       </div>
     </div>
-    <div class="setting-row">
-      <label>Data Backup &amp; Portability</label>
-      <div style="display:flex;gap:8px">
-        <button class="btn-change-name" id="exportDataBtn">📥 Export Data</button>
-        <button class="btn-change-name" id="importDataBtn">📤 Import Data</button>
-        <input type="file" id="importFileInput" accept=".json" style="display:none"/>
+
+    <!-- Section 4: Data & Preferences -->
+    <div class="settings-section">
+      <div class="settings-sec-title">💾 Data &amp; Portability</div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Profile Backup</label>
+          <span class="setting-desc">Export or restore your progress, streak, and lesson cache</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-change-name" id="exportDataBtn">📥 Export</button>
+          <button class="btn-change-name" id="importDataBtn">📤 Import</button>
+          <input type="file" id="importFileInput" accept=".json" style="display:none"/>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Welcome Experience</label>
+          <span class="setting-desc">Review onboarding instructions and setup screen</span>
+        </div>
+        <button class="btn-change-name" id="replayTourBtn">🎓 Replay Tour</button>
+      </div>
+
+      <div class="setting-row danger-row">
+        <div class="setting-info">
+          <label>Clear All Data</label>
+          <span class="setting-desc">Wipes local history, streak, and XP from this browser</span>
+        </div>
+        <button class="btn-danger" id="resetProgressBtn">⚠️ Reset</button>
       </div>
     </div>
-    <div class="setting-row danger-row">
-      <label>Reset Progress</label>
-      <button class="btn-danger" id="resetProgressBtn">⚠️ Clear My Data</button>
-    </div>
-    <div class="setting-row" style="border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;justify-content:center">
-      <a href="/trust.html" target="_blank" style="color:#aaa;font-size:11px;text-decoration:none;display:flex;align-items:center;gap:5px">
-        🛡️ Trust, Privacy &amp; Legal Principles ↗
+
+    <div class="settings-footer-link">
+      <a href="/trust.html" target="_blank">
+        🛡️ Trust, Privacy &amp; Local-First Architecture ↗
       </a>
     </div>
   </div>

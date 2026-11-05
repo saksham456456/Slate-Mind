@@ -33,7 +33,7 @@ async function startLesson(topic, isDaily = false) {
     const res = await fetch('/api/lesson', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic }),
+      body: JSON.stringify({ topic, teachStyle: STATE.teachStyle || 'mentor' }),
       signal: ctrl.signal,
     });
     clearTimeout(t);
@@ -604,7 +604,10 @@ function wire() {
   });
   el('badgesBtn').addEventListener('click', () => { renderBadges(); openModal('badgesOverlay'); });
   el('leaderboardBtn').addEventListener('click', () => { renderLeaderboard(); openModal('leaderboardOverlay'); });
-  el('settingsBtn').addEventListener('click', () => openModal('settingsOverlay'));
+  el('settingsBtn').addEventListener('click', () => {
+    if (el('settingNameInput')) el('settingNameInput').value = STATE.playerName || 'Student';
+    openModal('settingsOverlay');
+  });
 
   /* Modals */
   document.querySelectorAll('.modal-close[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
@@ -624,7 +627,44 @@ function wire() {
   });
   window.addEventListener('wb:checkpoint', e => showCheckpoint(e.detail.question, e.detail.hint));
 
-  /* Settings */
+  /* Settings: Inline Name Save */
+  const saveName = () => {
+    const newName = (el('settingNameInput')?.value || '').trim();
+    if (newName) {
+      STATE.playerName = newName;
+      localStorage.setItem('pb_studentName', newName);
+      save();
+      updateHUD();
+      showGameNotif('🎓', 'NAME SAVED', `Welcome, ${newName}!`, 'green', 1800);
+    }
+  };
+  el('saveNameBtn')?.addEventListener('click', saveName);
+  el('settingNameInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+
+  /* Settings: Teacher Persona */
+  document.querySelectorAll('.style-card').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.style-card').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      STATE.teachStyle = b.dataset.style || 'mentor';
+      save();
+      const title = b.querySelector('.sc-title')?.textContent || 'Mentor';
+      showGameNotif('🎓', 'TEACHING PERSONA', `Professor Byte: ${title}`, 'purple', 1800);
+    });
+  });
+
+  /* Settings: Chalk Theme */
+  document.querySelectorAll('.theme-card').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.theme-card').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      applyTheme(b.dataset.theme);
+      const name = b.querySelector('.tc-label')?.textContent || 'Theme';
+      showGameNotif('🎨', 'SURFACE THEME', `${name} applied`, 'gold', 1500);
+    });
+  });
+
+  /* Settings: Writing Speed */
   document.querySelectorAll('.speed-opt').forEach(b => {
     b.addEventListener('click', () => {
       document.querySelectorAll('.speed-opt').forEach(x => x.classList.remove('active'));
@@ -634,23 +674,36 @@ function wire() {
       save();
     });
   });
-  el('soundToggle').addEventListener('click', () => {
+
+  /* Settings: Audio & Auto-Scroll Toggles */
+  el('soundToggle')?.addEventListener('click', () => {
     STATE.soundOn = !STATE.soundOn;
     el('soundToggle').textContent = STATE.soundOn ? '🔊 ON' : '🔇 OFF';
     el('soundToggle').classList.toggle('off', !STATE.soundOn);
     save();
   });
-  el('changeNameBtn').addEventListener('click', () => {
-    localStorage.removeItem('pb_studentName');
-    STATE.hasOnboarded = false;
+
+  el('autoScrollToggle')?.addEventListener('click', () => {
+    STATE.autoScroll = !(STATE.autoScroll !== false);
+    el('autoScrollToggle').textContent = STATE.autoScroll ? '📜 ON' : '📜 OFF';
+    el('autoScrollToggle').classList.toggle('off', !STATE.autoScroll);
     save();
+    showGameNotif('📜', 'AUTO-SCROLL', STATE.autoScroll ? 'Following chalk writing' : 'Auto-scroll paused', 'purple', 1500);
+  });
+
+  /* Settings: Replay Tour */
+  el('replayTourBtn')?.addEventListener('click', () => {
     closeModal('settingsOverlay');
     openModal('splashOverlay');
-    el('studentNameInput').value = '';
-    setTimeout(() => el('studentNameInput').focus(), 300);
+    if (el('studentNameInput')) {
+      el('studentNameInput').value = STATE.playerName || 'Student';
+      el('studentNameInput').focus();
+    }
   });
-  el('resetProgressBtn').addEventListener('click', () => {
-    if (confirm('Clear ALL local data? This cannot be undone!')) {
+
+  /* Settings: Reset Progress */
+  el('resetProgressBtn')?.addEventListener('click', () => {
+    if (confirm('Clear ALL local data and restart journey? This cannot be undone!')) {
       localStorage.clear();
       location.reload();
     }
@@ -690,15 +743,6 @@ function wire() {
     reader.readAsText(file);
   });
 
-  /* Themes */
-  document.querySelectorAll('.color-opt').forEach(b => {
-    b.addEventListener('click', () => {
-      document.querySelectorAll('.color-opt').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      applyTheme(b.dataset.theme);
-    });
-  });
-
   /* Chalk tray & eraser */
   document.querySelector('.eraser')?.addEventListener('click', () => el('clearBtn').click());
 
@@ -723,12 +767,27 @@ document.addEventListener('DOMContentLoaded', () => {
   window.wb.setSpeed(STATE.writeSpeed || 'normal');
 
   // Sync settings UI
+  if (el('settingNameInput')) el('settingNameInput').value = STATE.playerName || 'Student';
   document.querySelectorAll('.speed-opt').forEach(b => b.classList.toggle('active', b.dataset.speed === STATE.writeSpeed));
-  el('soundToggle').textContent = STATE.soundOn ? '🔊 ON' : '🔇 OFF';
-  el('soundToggle').classList.toggle('off', !STATE.soundOn);
+  
+  if (el('soundToggle')) {
+    el('soundToggle').textContent = STATE.soundOn ? '🔊 ON' : '🔇 OFF';
+    el('soundToggle').classList.toggle('off', !STATE.soundOn);
+  }
+
+  if (el('autoScrollToggle')) {
+    const autoScroll = STATE.autoScroll !== false;
+    el('autoScrollToggle').textContent = autoScroll ? '📜 ON' : '📜 OFF';
+    el('autoScrollToggle').classList.toggle('off', !autoScroll);
+  }
+
   if (STATE.boardTheme) {
     applyTheme(STATE.boardTheme);
-    document.querySelectorAll('.color-opt').forEach(b => b.classList.toggle('active', b.dataset.theme === STATE.boardTheme));
+    document.querySelectorAll('.theme-card').forEach(b => b.classList.toggle('active', b.dataset.theme === STATE.boardTheme));
+  }
+
+  if (STATE.teachStyle) {
+    document.querySelectorAll('.style-card').forEach(b => b.classList.toggle('active', b.dataset.style === STATE.teachStyle));
   }
 
   updateHUD();

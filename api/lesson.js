@@ -10,11 +10,12 @@ module.exports = async (req, res) => {
   }
 
   const topic = (typeof body?.topic === 'string' ? body.topic : '').trim();
+  const teachStyle = (typeof body?.teachStyle === 'string' ? body.teachStyle : 'mentor').toLowerCase();
   if (!topic) return res.status(400).json({ error: 'Topic is required' });
   if (topic.length > 200) return res.status(400).json({ error: 'Topic is too long' });
 
   try {
-    const { parsed, history } = await generateLesson(topic);
+    const { parsed, history } = await generateLesson(topic, { teachStyle });
     const interactionId = Buffer.from(JSON.stringify(history)).toString('base64');
     res.json({ ...parsed, interactionId });
   } catch (err) {

@@ -116,6 +116,8 @@ describe('SlateMind Frontend Modules Unit Test Suite', () => {
       assert.equal(state.totalXP, 0);
       assert.equal(state.lessonsCompleted, 0);
       assert.equal(state.soundOn, true);
+      assert.equal(state.teachStyle, 'mentor');
+      assert.equal(state.autoScroll, true);
     });
 
     test('save() and load() persist custom properties to localStorage', () => {

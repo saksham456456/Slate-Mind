@@ -154,7 +154,7 @@ class Whiteboard {
 
   /** Smoothly scroll so the current writing position stays visible */
   _scrollFollow() {
-    if (!this.wrap) return;
+    if (!this.wrap || window.STATE?.autoScroll === false) return;
     const s   = this._scale();
     const dpr = window.devicePixelRatio || 1;
     // cy in virtual units → CSS pixels
@@ -674,8 +674,15 @@ class Whiteboard {
     ctx.lineWidth = px(3);
     ctx.strokeRect(px(1.5), px(1.5), out.width - px(3), out.height - px(3));
 
-    // 2. Board surface + soft light patches (same as the on-screen board)
-    ctx.fillStyle = '#1a3a2a';
+    // 2. Board surface + soft light patches (matches current board theme)
+    const themeBgMap = {
+      classic: '#1a3a2a',
+      slate: '#111418',
+      whiteboard: '#f8fafc',
+      neon: '#050f1a',
+      sunset: '#1a0f00'
+    };
+    ctx.fillStyle = themeBgMap[window.STATE?.boardTheme] || '#1a3a2a';
     ctx.fillRect(bx, by, boardW, boardH);
     const patch = (cx, cy, a) => {
       const g = ctx.createRadialGradient(bx + boardW*cx, by + boardH*cy, 0,
