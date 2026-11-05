@@ -63,6 +63,7 @@
   </div>
 
   <div class="hud-right">
+    <button class="hud-btn" id="constellationBtn" title="View your Knowledge Constellation">🌌 Constellation</button>
     <button class="hud-btn" id="fullscreenBtn" title="Fullscreen board">⛶</button>
     <button class="hud-btn" id="badgesBtn">🏅 Badges</button>
     <button class="hud-btn" id="leaderboardBtn">🏆</button>
@@ -307,6 +308,28 @@
 </main>
 
 <!-- ══ MODALS ════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="constellationOverlay">
+  <div class="modal constellation-modal">
+    <button class="modal-close" data-close="constellationOverlay">✕</button>
+    <div class="constellation-header">
+      <h2 class="modal-title">🌌 Knowledge Constellation</h2>
+      <p class="constellation-sub">Your interconnected chalkboard cosmos • Click any star to jump to that lesson</p>
+      <div class="constellation-stats">
+        <span class="c-stat">⭐ <strong id="constellationStarCount">0</strong> Stars Discovered</span>
+        <span class="c-stat">🔗 <strong id="constellationLinkCount">0</strong> Connections</span>
+      </div>
+    </div>
+    <div class="constellation-viewport" id="constellationViewport">
+      <canvas id="constellationCanvas" width="820" height="460"></canvas>
+      <div id="constellationEmpty" class="constellation-empty" style="display:none">
+        <div style="font-size:42px;margin-bottom:8px;">✨</div>
+        <h3>Your galaxy is currently empty</h3>
+        <p>Explore lessons and rabbit holes to ignite your first stars in the constellation!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="badgesOverlay">
   <div class="modal badges-modal">
     <button class="modal-close" data-close="badgesOverlay">✕</button>
