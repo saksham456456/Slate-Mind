@@ -9,17 +9,28 @@ module.exports = async (req, res) => {
     try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON' }); }
   }
 
-  const { question, interactionId } = body || {};
+  const { question, interactionId, topic } = body || {};
   if (typeof question !== 'string' || !question.trim()) return res.status(400).json({ error: 'question is required' });
   if (question.length > 300) return res.status(400).json({ error: 'Question is too long' });
-  if (typeof interactionId !== 'string' || !interactionId) return res.status(400).json({ error: 'interactionId is required' });
-  if (interactionId.length > 60000) return res.status(400).json({ error: 'Invalid interactionId' });
 
-  let history;
-  try {
-    history = JSON.parse(Buffer.from(interactionId, 'base64').toString('utf8'));
-  } catch {
-    return res.status(400).json({ error: 'Invalid interactionId' });
+  let history = null;
+  if (typeof interactionId === 'string' && interactionId.trim() && interactionId.length <= 60000) {
+    try {
+      history = JSON.parse(Buffer.from(interactionId, 'base64').toString('utf8'));
+    } catch {
+      history = null;
+    }
+  }
+
+  // If no interaction history was stored (e.g. offline sample, history recall, or new follow-up),
+  // reconstruct context from topic so live AI API can answer seamlessly
+  if (!Array.isArray(history) || history.length === 0) {
+    const topicContext = (typeof topic === 'string' && topic.trim()) ? topic.trim() : 'General Science & Mathematics';
+    history = [
+      { role: 'system', content: 'You are Professor Byte, master blackboard teacher. Answer student follow-up questions clearly and concisely on the chalkboard.' },
+      { role: 'user', content: `Topic: ${topicContext}` },
+      { role: 'assistant', content: `I have introduced the topic of ${topicContext}. Let us dive into your follow-up questions.` }
+    ];
   }
 
   try {

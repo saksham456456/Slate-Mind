@@ -209,13 +209,30 @@ describe('SlateMind Server & API Automated Test Suite', () => {
   });
 
   describe('4. Follow-Up Question API (/api/ask)', () => {
-    test('POST /api/ask with missing interactionId returns 400', async () => {
+    test('POST /api/ask with missing question fails with 400', async () => {
       const res = await fetch(`${baseUrl}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: 'How do stomata work?' })
+        body: JSON.stringify({ question: '' })
       });
       assert.equal(res.status, 400);
+      const body = await res.json();
+      assert.match(body.error, /question is required/i);
+    });
+
+    test('POST /api/ask with missing interactionId still answers via API and topic context', async () => {
+      const res = await fetch(`${baseUrl}/api/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: 'How do stomata regulate water loss?',
+          topic: 'Photosynthesis'
+        })
+      });
+      assert.equal(res.status, 200);
+      const ans = await res.json();
+      assert.ok(Array.isArray(ans.blocks) && ans.blocks.length >= 1, 'Must return answer blocks');
+      assert.ok(ans.interactionId, 'Must return newly synthesized interactionId');
     });
 
     test('POST /api/ask with valid interactionId answers follow-up with blackboard blocks', async () => {

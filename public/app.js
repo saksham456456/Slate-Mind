@@ -69,6 +69,17 @@ async function startLesson(topic, isDaily = false) {
     // If network or server unavailable, seamlessly utilize client pre-created sample without alerting user
     const offlineSample = (typeof getSampleLesson === 'function') ? getSampleLesson(topic) : null;
     if (offlineSample) {
+      try {
+        const synthetic = [
+          { role: 'system', content: 'You are Professor Byte, master blackboard teacher.' },
+          { role: 'user', content: `Topic: ${topic}` },
+          { role: 'assistant', content: JSON.stringify(offlineSample) }
+        ];
+        window.interactionId = btoa(unescape(encodeURIComponent(JSON.stringify(synthetic))));
+      } catch {
+        window.interactionId = null;
+      }
+
       el('boardLoading').style.display = 'none';
       showLessonMeta(topic, offlineSample);
       wb = wb || window.wb;
@@ -155,8 +166,20 @@ async function askFollowUp(question) {
   if (!question) return;
 
   if (!window.interactionId) {
-    showProfMsg('⚠️ Start a lesson first before asking follow-up questions.');
-    return;
+    if (window.lastTopic) {
+      try {
+        const synthetic = [
+          { role: 'system', content: 'You are Professor Byte, master blackboard teacher.' },
+          { role: 'user', content: `Topic: ${window.lastTopic}` }
+        ];
+        window.interactionId = btoa(unescape(encodeURIComponent(JSON.stringify(synthetic))));
+      } catch {
+        window.interactionId = null;
+      }
+    } else {
+      showProfMsg('⚠️ Start a lesson first before asking follow-up questions.');
+      return;
+    }
   }
 
   el('askBtn').disabled   = true;
@@ -174,7 +197,11 @@ async function askFollowUp(question) {
     const res = await fetch('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, interactionId: window.interactionId }),
+      body: JSON.stringify({
+        question,
+        interactionId: window.interactionId || '',
+        topic: window.lastTopic || ''
+      }),
       signal: ctrl.signal,
     });
     clearTimeout(t);
@@ -272,6 +299,18 @@ async function loadHistoryLesson(h) {
   if (h.data && Array.isArray(h.data.blocks) && h.data.blocks.length > 0) {
     const data = h.data;
     window.interactionId = data.interactionId || null;
+    if (!window.interactionId) {
+      try {
+        const synthetic = [
+          { role: 'system', content: 'You are Professor Byte, master blackboard teacher.' },
+          { role: 'user', content: `Topic: ${topic}` },
+          { role: 'assistant', content: JSON.stringify(data) }
+        ];
+        window.interactionId = btoa(unescape(encodeURIComponent(JSON.stringify(synthetic))));
+      } catch {
+        window.interactionId = null;
+      }
+    }
     window.currentQuiz = data.quiz || [];
     showLessonMeta(topic, data);
     wb = wb || window.wb;
