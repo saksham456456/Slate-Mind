@@ -180,6 +180,7 @@ class Whiteboard {
 
   /* ── Erase Block (Module 1: visible chalk eraser wipe) ── */
   async _eraseArea(b) {
+    if (window.playEraserSound) window.playEraserSound();
     const s = this._scale(), ctx = this.ctx;
     const wipeH = Math.max(40, (b.height || 100)) * s;
     const targetY = (b.y !== undefined ? b.y : Math.max(0, this.cy - wipeH / s)) * s;
@@ -439,6 +440,11 @@ class Whiteboard {
       await this._waitResume();
       drawn += text[i];
 
+      // Soft procedural chalk-on-slate friction ASMR
+      if (i % 2 === 0 && text[i] !== ' ' && window.playChalkSound && this._speed !== 'instant') {
+        window.playChalkSound();
+      }
+
       const mw = ctx.measureText(text).width + 6 * s;
       ctx.clearRect((x - 2) * s, (y - 2) * s, mw, 48 * s);
       ctx.globalAlpha = 0.88 + Math.random() * 0.12;
@@ -447,15 +453,18 @@ class Whiteboard {
       const jy = (Math.random() - 0.5) * 0.45;
       ctx.fillText(drawn, (x + jx) * s, (y + jy) * s);
 
-      // Chalk dust particles
-      if (Math.random() < 0.25) {
+      // Natural organic chalk dust micro-particles
+      if (Math.random() < 0.28) {
         ctx.save();
         ctx.fillStyle = color;
-        ctx.globalAlpha = 0.2 + Math.random() * 0.3;
+        ctx.globalAlpha = 0.16 + Math.random() * 0.32;
         const curCharW = ctx.measureText(drawn).width;
-        const px = (x * s) + curCharW + (Math.random() - 0.5) * 8 * s;
-        const py = (y + 12) * s + (Math.random() - 0.5) * 14 * s;
-        ctx.fillRect(px, py, (0.8 + Math.random() * 1.2) * s, (0.8 + Math.random() * 1.2) * s);
+        const px = (x * s) + curCharW + (Math.random() - 0.5) * 10 * s;
+        const py = (y + 10) * s + Math.random() * 14 * s;
+        const pRadius = (0.5 + Math.random() * 1.2) * s;
+        ctx.beginPath();
+        ctx.arc(px, py, pRadius, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
       }
 
@@ -488,6 +497,9 @@ class Whiteboard {
         const t = j/steps;
         ctx.lineTo(x0+(x1-x0)*t, y0+(y1-y0)*t);
         ctx.stroke();
+        if (j % 6 === 0 && window.playChalkSound && this._speed !== 'instant') {
+          window.playChalkSound();
+        }
         if (spd.char > 0) await this._delay(spd.char/5);
       }
     }

@@ -829,6 +829,71 @@ function setUIState(s) {
 }
 
 /* ══ 21. SOUND ENGINE (lazy init) ═════════════════════════════ */
+let _noiseBuf = null;
+function getChalkNoise(ctx) {
+  if (_noiseBuf) return _noiseBuf;
+  const len = Math.floor(ctx.sampleRate * 0.05);
+  _noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = _noiseBuf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  }
+  return _noiseBuf;
+}
+
+window.playChalkSound = function() {
+  if (!STATE.soundOn) return;
+  const ctx = initAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  const now = ctx.currentTime;
+  try {
+    const src = ctx.createBufferSource();
+    src.buffer = getChalkNoise(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1900 + Math.random() * 1100, now);
+    filter.Q.setValueAtTime(2.8, now);
+
+    const gain = ctx.createGain();
+    const vol = 0.028 * (0.75 + Math.random() * 0.5);
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 0.045);
+  } catch {}
+};
+
+window.playEraserSound = function() {
+  if (!STATE.soundOn) return;
+  const ctx = initAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  const now = ctx.currentTime;
+  try {
+    const src = ctx.createBufferSource();
+    src.buffer = getChalkNoise(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(550, now);
+    filter.frequency.exponentialRampToValueAtTime(250, now + 0.16);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 0.16);
+  } catch {}
+};
+
 function initAudio() {
   if (_audioCtx) return _audioCtx;
   try { _audioCtx=new(window.AudioContext||window.webkitAudioContext)(); } catch{}
