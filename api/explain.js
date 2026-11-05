@@ -3,6 +3,7 @@ const { z } = require('zod');
 
 const feynmanSchema = z.object({
   score: z.coerce.number().default(75),
+  masteryLevel: z.enum(['Developing', 'Solid Grasp', 'Feynman Master']).default('Solid Grasp'),
   strengths: z.array(z.string()).default([]),
   gaps: z.array(z.string()).default([]),
   feedback: z.string().default('Good job explaining the fundamentals!'),
@@ -24,20 +25,22 @@ module.exports = async (req, res) => {
   }
 
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
-  const GROQ_MODEL   = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+  const GROQ_MODEL   = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
   const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
   // Fallback if no API key or offline
   if (!GROQ_API_KEY) {
     const wordCount = explanation.trim().split(/\s+/).length;
     const score = Math.min(95, Math.max(60, Math.round(50 + wordCount * 2.5)));
+    const masteryLevel = score >= 85 ? 'Feynman Master' : score >= 70 ? 'Solid Grasp' : 'Developing';
     return res.json({
       score,
+      masteryLevel,
       strengths: ['Clear terminology', 'Logical intuition'],
       gaps: ['Can connect deeper to edge cases'],
       feedback: `Solid breakdown of ${topic.slice(0, 30)}! You articulated the primary concept well.`,
       xpReward: Math.round(score * 0.4),
-      chalkCorrection: 'Review: Core mechanisms connect all principles together.'
+      chalkCorrection: score < 85 ? 'Review: Core mechanisms connect all principles together.' : ''
     });
   }
 
@@ -49,11 +52,12 @@ Evaluate their understanding using the Feynman technique.
 Return ONLY valid JSON (no markdown):
 {
   "score": 0-100,
+  "masteryLevel": "Developing" | "Solid Grasp" | "Feynman Master",
   "strengths": ["point 1", "point 2"],
   "gaps": ["missed point or error"],
   "feedback": "2-3 encouraging sentences with constructive guidance",
   "xpReward": 20-50,
-  "chalkCorrection": "One concise line summarizing what to remember"
+  "chalkCorrection": "One concise line summarizing what to remember (empty string if score >= 88)"
 }
 `.trim();
 

@@ -1167,7 +1167,7 @@ function wire() {
     }
     const btn = el('feynmanSubmitBtn');
     btn.disabled = true;
-    btn.textContent = 'Evaluating…';
+    btn.textContent = 'Sparring with Professor…';
 
     try {
       const res = await fetch('/api/explain', {
@@ -1176,31 +1176,58 @@ function wire() {
         body: JSON.stringify({ topic: lastTopic || 'Lesson', explanation: text })
       });
       const data = await res.json();
+      const score = Number(data.score) || 75;
+      const isMaster = score >= 85;
 
       el('feynmanResult').style.display = 'block';
-      el('feynmanScore').textContent = `${data.score || 80}%`;
-      el('feynmanFeedback').textContent = data.feedback || 'Great job!';
+      el('feynmanScore').textContent = `${score}%`;
+      el('feynmanFeedback').textContent = data.feedback || 'Great effort explaining!';
+
+      const badge = el('feynmanBadge');
+      if (badge) {
+        badge.style.display = 'inline-block';
+        badge.className = `feynman-badge-pill ${isMaster ? 'master' : 'sparring'}`;
+        badge.textContent = isMaster ? '🏆 Feynman Master Certified' : `🥋 Sparring: ${data.masteryLevel || 'Refining'}`;
+      }
+
       if (data.xpReward) {
         awardXP(data.xpReward, 'feynman');
         el('feynmanXpEarned').textContent = `+${data.xpReward} XP earned!`;
       }
 
-      // If there's a correction, chalk it visibly on the board in red
-      if (data.chalkCorrection && wb) {
-        await wb.appendBlocks([
-          { type: 'emphasize', text: `Key Correction: ${data.chalkCorrection}`, style: 'underline' }
-        ]);
+      const retryBtn = el('feynmanRetryBtn');
+      if (retryBtn) {
+        retryBtn.style.display = isMaster ? 'none' : 'block';
+        retryBtn.onclick = () => {
+          if (input) {
+            input.focus();
+            input.select();
+          }
+        };
       }
 
-      sound('complete');
-      showGameNotif('💡', 'UNDERSTANDING RATED', `${data.score}% comprehension!`, 'gold', 2500);
+      if (isMaster && wb) {
+        sound('perfect');
+        await wb.appendBlocks([
+          { type: 'emphasize', text: `✦ Verified Mastery: ${lastTopic || 'Concept'} (${score}%)`, style: 'box' }
+        ]);
+        showGameNotif('🎖️', 'FEYNMAN MASTER', `Concept Mastered (${score}%)!`, 'gold', 3000);
+      } else {
+        sound('complete');
+        if (data.chalkCorrection && wb) {
+          await wb.appendBlocks([
+            { type: 'emphasize', text: `Professor Note: ${data.chalkCorrection}`, style: 'underline' }
+          ]);
+        }
+        showGameNotif('🥋', 'SPARRING ROUND', `${score}% — Teacher note added to board!`, 'purple', 2500);
+      }
     } catch (err) {
       el('feynmanResult').style.display = 'block';
-      el('feynmanScore').textContent = 'Completed!';
+      el('feynmanScore').textContent = 'Reviewed!';
       el('feynmanFeedback').textContent = 'Your explanation was reviewed. Keep practicing expressing concepts concisely.';
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Evaluate Understanding ➤';
+      btn.textContent = 'Spar Again ➤';
     }
   });
 
