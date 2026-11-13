@@ -2,8 +2,9 @@
 require('dotenv').config();
 
 // ── API Key Notice (Informative, non-fatal for local dev) ──────
-const hasLiveAI = Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY);
-if (!hasLiveAI) {
+const { hasLiveAI, providers } = require('./lib/providers');
+const { allowedOrigins } = require('./lib/config');
+if (!hasLiveAI()) {
   console.warn('⚠️ Neither GROQ_API_KEY nor OPENAI_API_KEY set — SlateMind will run in offline mode using sample & fallback curriculum.');
 }
 
@@ -17,14 +18,15 @@ const explain    = require('./api/explain');
 
 const app = express();
 
-// ── CORS ──────────────────────────────────────────────────────
+// ── Proxy + CORS ───────────────────────────────────────────────
+// Behind Vercel/any proxy the real client IP is in X-Forwarded-For; without this
+// every visitor shares one rate-limit bucket.
+app.set('trust proxy', 1);
+
+// Exact origins only (no wildcard *.vercel.app). Same-origin requests need no CORS headers.
+const ORIGINS = allowedOrigins();
 app.use(cors({
-  origin: [
-    'https://slate-mind.vercel.app',
-    'https://slatmind.vercel.app',
-    /\.vercel\.app$/,
-    'http://localhost:3000',
-  ],
+  origin: (origin, cb) => cb(null, !origin || ORIGINS.has(origin)),
   methods: ['GET', 'POST'],
 }));
 
@@ -40,7 +42,10 @@ app.use('/api/', limiter);
 
 // ── Body Parsing ──────────────────────────────────────────────
 app.use(express.json({ limit: '2mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  // The service worker must always be re-checked so new deploys reach users
+  setHeaders: (res, file) => { if (file.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache'); },
+}));
 
 // ── API Routes ────────────────────────────────────────────────
 app.post('/api/lesson',  lesson);
@@ -49,13 +54,11 @@ app.post('/api/explain', explain);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
+  const active = new Set(providers().map(p => p.name));
   res.json({
     status: 'ok',
-    hasKey: Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY),
-    providers: {
-      groq: Boolean(process.env.GROQ_API_KEY),
-      openai: Boolean(process.env.OPENAI_API_KEY)
-    },
+    hasKey: hasLiveAI(),
+    providers: { groq: active.has('groq'), openai: active.has('openai') },
     timestamp: new Date().toISOString()
   });
 });

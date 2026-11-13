@@ -3,23 +3,33 @@
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const app = require('../server');
+const { startMockAI } = require('./helpers/mockAI');
 
 describe('SlateMind Server & API Automated Test Suite', () => {
   let server;
   let baseUrl;
   let interactionId;
 
-  before((_, done) => {
-    // Listen on dynamic ephemeral port 0
-    server = app.listen(0, () => {
-      const port = server.address().port;
-      baseUrl = `http://127.0.0.1:${port}`;
-      done();
+  let mockAI;
+
+  before(async () => {
+    // A local stand-in for Groq so live-AI endpoints can be tested without a real key
+    mockAI = await startMockAI();
+    process.env.GROQ_API_KEY = 'test-key';
+    process.env.GROQ_API_URL = mockAI.url;
+    delete process.env.OPENAI_API_KEY;
+    await new Promise(resolve => {
+      // Listen on dynamic ephemeral port 0
+      server = app.listen(0, () => {
+        baseUrl = `http://127.0.0.1:${server.address().port}`;
+        resolve();
+      });
     });
   });
 
-  after((_, done) => {
-    server.close(done);
+  after(async () => {
+    await new Promise(resolve => server.close(resolve));
+    await mockAI.close();
   });
 
   describe('1. Static Asset Delivery', () => {
@@ -35,6 +45,8 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       assert.match(text, /samples\.js/);
       assert.match(text, /gamification\.js/);
       assert.match(text, /quiz\.js/);
+      assert.match(text, /learning\.js/);
+      assert.match(text, /api\.js/);
       assert.match(text, /constellation\.js/);
       assert.match(text, /tour\.js/);
       assert.match(text, /whiteboard\.js/);
@@ -58,6 +70,8 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       { path: '/constellation.js', expected: 'renderConstellation' },
       { path: '/tour.js', expected: 'startAppTour' },
       { path: '/whiteboard.js', expected: 'Whiteboard' },
+      { path: '/api.js', expected: 'apiPost' },
+      { path: '/learning.js', expected: 'setupLearningUI' },
       { path: '/app.js', expected: 'startLesson' },
     ];
 
@@ -71,11 +85,11 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       });
     }
 
-    test('GET /sw.js caches version slatemind-v2', async () => {
+    test('GET /sw.js declares a versioned cache', async () => {
       const res = await fetch(`${baseUrl}/sw.js`);
       assert.equal(res.status, 200);
       const text = await res.text();
-      assert.match(text, /slatemind-v2/);
+      assert.match(text, /slatemind-v\d+/);
     });
 
     test('GET /manifest.json returns valid web manifest', async () => {

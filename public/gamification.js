@@ -17,7 +17,7 @@ function getLvl(xp) {
   return { cur, nxt };
 }
 
-function awardXP(amount, reason = '') {
+function awardXP(amount) {
   if (!amount || amount <= 0) return;
   const prevLv = STATE.level;
   STATE.totalXP += amount;

@@ -5,110 +5,86 @@
 'use strict';
 
 /* ── Lesson Generation & Flow ─────────────────────────────────── */
-async function startLesson(topic, isDaily = false) {
-  topic = (topic || '').trim();
-  if (!topic) {
-    el('topicInput').focus();
-    el('topicInput').classList.add('error');
-    el('topicError').style.display = 'block';
-    setTimeout(() => {
-      el('topicInput').classList.remove('error');
-      el('topicError').style.display = 'none';
-    }, 2500);
-    return;
-  }
-  window.lastTopic = topic;
-  window.interactionId = null;
+const OFFLINE_OUTLINE_NOTICE =
+  '📴 No live AI right now. This is a generic outline, not a full lesson. Connect to the internet for a complete one.';
 
+function flashTopicError() {
+  el('topicInput').focus();
+  el('topicInput').classList.add('error');
+  el('topicError').style.display = 'block';
+  setTimeout(() => {
+    el('topicInput').classList.remove('error');
+    el('topicError').style.display = 'none';
+  }, 2500);
+}
+
+function showLessonLoading() {
   hideError();
   setUIState('loading');
   el('boardIdle').style.display    = 'none';
   el('boardLoading').style.display = 'flex';
   el('boardError').style.display   = 'none';
   el('loadingText').textContent    = LOADING_MSGS[Math.floor(Math.random() * LOADING_MSGS.length)];
+}
+
+/** Sets up the board and writes a lesson on it. Used for AI lessons and local samples alike. */
+async function playLesson(data, topic, isDaily) {
+  el('boardLoading').style.display = 'none';
+  showLessonMeta(topic, data);
+  window.currentLessonBlocks = data.blocks || [];   // for Listen (read aloud)
+  if (window.stopReadAloud) stopReadAloud();
+  wb = wb || window.wb;
+  if (!wb && typeof Whiteboard !== 'undefined') {
+    wb = new Whiteboard('boardCanvas');
+    window.wb = wb;
+  }
+  if (wb) {
+    wb.clear();
+    wb.setSpeed(STATE.writeSpeed);
+  }
+  if (STATE.writeSpeed === 'fast' || STATE.writeSpeed === 'instant') STATE.fastLessons++;
+
+  setUIState('writing');
+  if (window.sound) sound('start');
+  showGameNotif('📖', 'LESSON STARTED', `Topic: ${topic.slice(0, 30)}`, 'green', 1800);
+
+  await wb.renderLesson(data.blocks || [], {
+    onAllDone: () => onLessonComplete(data, topic, isDaily),
+  });
+}
+
+function showLessonFailure(err) {
+  el('boardLoading').style.display = 'none';
+  showError(err.name === 'AbortError'
+    ? 'Request timed out — please try again.'
+    : (err.message || 'Could not reach Professor Byte.'));
+  setUIState('idle');
+  if (window.sound) sound('error');
+}
+
+async function startLesson(topic, isDaily = false) {
+  topic = (topic || '').trim();
+  if (!topic) { flashTopicError(); return; }
+  window.lastTopic = topic;
+  window.interactionId = null;
+  showLessonLoading();
 
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 30000);
-    const res = await fetch('/api/lesson', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, teachStyle: STATE.teachStyle || 'mentor' }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(t);
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({ error: `Error ${res.status}` }));
-      throw new Error(e.error || `Server error ${res.status}`);
-    }
-    const data = await res.json();
+    const data = await apiPost('/api/lesson', {
+      topic,
+      teachStyle: STATE.teachStyle || 'mentor',
+      level: STATE.profile?.level,
+      language: STATE.profile?.language,
+    }, { timeoutMs: 30000 });
     window.interactionId = data.interactionId || null;
-
-    el('boardLoading').style.display = 'none';
-    showLessonMeta(topic, data);
-    wb = wb || window.wb;
-    if (!wb && typeof Whiteboard !== 'undefined') {
-      wb = new Whiteboard('boardCanvas');
-      window.wb = wb;
-    }
-    if (wb) {
-      wb.clear();
-      wb.setSpeed(STATE.writeSpeed);
-    }
-    if (STATE.writeSpeed === 'fast' || STATE.writeSpeed === 'instant') STATE.fastLessons++;
-
-    setUIState('writing');
-    if (window.sound) sound('start');
-    showGameNotif('📖', 'LESSON STARTED', `Topic: ${topic.slice(0, 30)}`, 'green', 1800);
-
-    await wb.renderLesson(data.blocks || [], {
-      onAllDone: () => onLessonComplete(data, topic, isDaily),
-    });
-
+    if (data.offline) showProfMsg(OFFLINE_OUTLINE_NOTICE);   // be upfront: not a real AI lesson
+    await playLesson(data, topic, isDaily);
   } catch (err) {
-    // If network or server unavailable, seamlessly utilize client pre-created sample without alerting user
-    const offlineSample = (typeof getSampleLesson === 'function') ? getSampleLesson(topic) : null;
-    if (offlineSample) {
-      try {
-        const synthetic = [
-          { role: 'system', content: 'You are Professor Byte, master blackboard teacher.' },
-          { role: 'user', content: `Topic: ${topic}` },
-          { role: 'assistant', content: JSON.stringify(offlineSample) }
-        ];
-        window.interactionId = btoa(unescape(encodeURIComponent(JSON.stringify(synthetic))));
-      } catch {
-        window.interactionId = null;
-      }
-
-      el('boardLoading').style.display = 'none';
-      showLessonMeta(topic, offlineSample);
-      wb = wb || window.wb;
-      if (!wb && typeof Whiteboard !== 'undefined') {
-        wb = new Whiteboard('boardCanvas');
-        window.wb = wb;
-      }
-      if (wb) {
-        wb.clear();
-        wb.setSpeed(STATE.writeSpeed);
-      }
-      if (STATE.writeSpeed === 'fast' || STATE.writeSpeed === 'instant') STATE.fastLessons++;
-
-      setUIState('writing');
-      if (window.sound) sound('start');
-      showGameNotif('📖', 'LESSON STARTED', `Topic: ${topic.slice(0, 30)}`, 'green', 1800);
-
-      await wb.renderLesson(offlineSample.blocks || [], {
-        onAllDone: () => onLessonComplete(offlineSample, topic, isDaily),
-      });
-      return;
-    }
-
-    el('boardLoading').style.display = 'none';
-    showError(err.name === 'AbortError'
-      ? 'Request timed out — please try again.'
-      : (err.message || 'Could not reach Professor Byte.'));
-    setUIState('idle');
-    if (window.sound) sound('error');
+    // Server unreachable: a hand-written master lesson shipped with the app is still a real lesson.
+    const sample = (typeof getSampleLesson === 'function') ? getSampleLesson(topic) : null;
+    if (!sample) { showLessonFailure(err); return; }
+    window.interactionId = buildInteractionId(topic, sample);
+    await playLesson(sample, topic, isDaily);
   }
 }
 
@@ -124,13 +100,17 @@ function onLessonComplete(data, topic, isDaily) {
   }
   save();
 
-  const xp = data.xpReward || 80;
-  awardXP(xp, 'lesson');
+  // A generic offline outline is not a real lesson, so it earns no XP
+  const xp = data.offline ? 0 : (data.xpReward || 80);
+  if (xp) awardXP(xp);
 
   addToHistory(topic, data);
-  showFactPanel(data.funFact);
-  showTermsPanel(data.keyTerms);
-  setupQuizPanel(data.quiz);
+  // The generic offline outline has placeholder terms and quiz: show none rather than junk
+  showFactPanel(data.offline ? '' : data.funFact);
+  showTermsPanel(data.offline ? [] : data.keyTerms);
+  setupQuizPanel(data.offline ? [] : data.quiz);
+  showCareersPanel(data.offline ? [] : data.careers);
+  updateReviseCard();
   setupFeynmanPanel();
 
   el('askBar').style.display = 'block';
@@ -138,7 +118,7 @@ function onLessonComplete(data, topic, isDaily) {
   setUIState('done');
   checkBadges();
   if (window.sound) sound('complete');
-  showGameNotif('🎉', 'LESSON COMPLETE', `+${xp} XP earned!`, 'gold', 2500);
+  showGameNotif('🎉', 'LESSON COMPLETE', xp ? `+${xp} XP earned!` : 'Outline complete (no XP offline)', 'gold', 2500);
 
   if (document.getElementById('rightSidebar').classList.contains('collapsed')) {
     el('rightOpenHudBtn').style.display = 'flex';
@@ -155,64 +135,55 @@ function showLessonMeta(topic, data) {
   const diff = data.difficulty || 'Intermediate';
   el('metaDiff').textContent  = diff;
   el('metaDiff').className    = `meta-diff diff-${diff}`;
-  el('metaXP').textContent    = `+${data.xpReward || 80} XP`;
+  el('metaXP').textContent    = data.offline ? 'Offline outline' : `+${data.xpReward || 80} XP`;
   el('metaTerms').textContent = data.keyTerms?.length ? '📌 ' + data.keyTerms.slice(0, 3).join(', ') : '';
   el('lessonMeta').style.display = 'flex';
 }
 
 /* ── Follow-Up Question Flow ──────────────────────────────────── */
+function setAskBusy(busy) {
+  el('askBtn').disabled   = busy;
+  el('askInput').disabled = busy;
+  if (busy) {
+    el('askInput').value = '';
+    showAskStatus(true, 'Professor Byte is answering…');
+  } else {
+    el('askInput').focus();
+  }
+}
+
+function askErrorMessage(err) {
+  if (err.name === 'AbortError') return '⏱ Request timed out. Try a shorter question.';
+  if (err.offline) return `📴 ${err.message}`;
+  return `⚠️ ${err.message || 'Could not get answer.'}`;
+}
+
 async function askFollowUp(question) {
   question = (question || '').trim();
   if (!question) return;
 
   if (!window.interactionId) {
-    if (window.lastTopic) {
-      try {
-        const synthetic = [
-          { role: 'system', content: 'You are Professor Byte, master blackboard teacher.' },
-          { role: 'user', content: `Topic: ${window.lastTopic}` }
-        ];
-        window.interactionId = btoa(unescape(encodeURIComponent(JSON.stringify(synthetic))));
-      } catch {
-        window.interactionId = null;
-      }
-    } else {
+    if (!window.lastTopic) {
       showProfMsg('⚠️ Start a lesson first before asking follow-up questions.');
       return;
     }
+    window.interactionId = buildInteractionId(window.lastTopic);
   }
 
-  el('askBtn').disabled   = true;
-  el('askInput').value    = '';
-  el('askInput').disabled = true;
-  showAskStatus(true, 'Professor Byte is answering…');
-
-  STATE.followUps++;
-  save();
-  checkBadges();
-
+  setAskBusy(true);
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 25000);
-    const res = await fetch('/api/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question,
-        interactionId: window.interactionId || '',
-        topic: window.lastTopic || ''
-      }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(t);
-
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({ error: `Error ${res.status}` }));
-      throw new Error(e.error || `Error ${res.status}`);
-    }
-
-    const data = await res.json();
+    const data = await apiPost('/api/ask', {
+      question,
+      interactionId: window.interactionId || '',
+      topic: window.lastTopic || '',
+      language: STATE.profile?.language,
+    }, { timeoutMs: 25000 });
     window.interactionId = data.interactionId || window.interactionId;
+
+    // Only a real answer counts toward the follow-up badge
+    STATE.followUps++;
+    save();
+    checkBadges();
 
     if (window.sound) sound('start');
     showAskStatus(true, 'Writing on the board…');
@@ -225,18 +196,12 @@ async function askFollowUp(question) {
         showGameNotif('🙋', '+XP', `Follow-up answered! +${data.xpReward || 20} XP`, 'green', 1800);
       },
     });
-
   } catch (err) {
     showAskStatus(false);
-    const msg = err.name === 'AbortError'
-      ? '⏱ Request timed out. Try a shorter question.'
-      : `⚠️ ${err.message || 'Could not get answer.'}`;
-    showProfMsg(msg);
+    showProfMsg(askErrorMessage(err));
     if (window.sound) sound('error');
   } finally {
-    el('askBtn').disabled   = false;
-    el('askInput').disabled = false;
-    el('askInput').focus();
+    setAskBusy(false);
   }
 }
 
@@ -248,14 +213,22 @@ function showAskStatus(visible, text = '') {
 
 /* ── Right Sidebar Panels ─────────────────────────────────────── */
 function showFactPanel(fact) {
-  if (!fact) return;
+  if (!fact) {                       // nothing to show: clear the previous lesson's fact
+    el('factEmpty').style.display = 'block';
+    el('factText').style.display  = 'none';
+    return;
+  }
   el('factEmpty').style.display = 'none';
   el('factText').textContent    = fact;
   el('factText').style.display  = 'block';
 }
 
 function showTermsPanel(terms) {
-  if (!terms?.length) return;
+  if (!terms?.length) {              // nothing to show: clear the previous lesson's terms
+    el('termsEmpty').style.display = 'block';
+    el('glossaryList').innerHTML   = '';
+    return;
+  }
   el('termsEmpty').style.display = 'none';
   el('glossaryList').innerHTML   = terms.map((t, i) => `
     <div class="glossary-term">
@@ -270,15 +243,17 @@ function addToHistory(topic, data) {
     id: Date.now(),
     topic,
     diff: data.difficulty || 'Intermediate',
-    xp: data.xpReward || 80,
+    xp: data.offline ? 0 : (data.xpReward || 80),
     ts: Date.now(),
     data: {
       title: data.title || topic,
       difficulty: data.difficulty || 'Intermediate',
-      xpReward: data.xpReward || 80,
+      xpReward: data.offline ? 0 : (data.xpReward || 80),
+      offline: Boolean(data.offline),
       funFact: data.funFact || '',
       keyTerms: data.keyTerms || [],
       rabbitHoles: data.rabbitHoles || [],
+      careers: data.careers || [],
       quiz: data.quiz || [],
       blocks: data.blocks || [],
       interactionId: data.interactionId || null
@@ -331,6 +306,8 @@ async function loadHistoryLesson(h) {
         showFactPanel(data.funFact);
         showTermsPanel(data.keyTerms);
         setupQuizPanel(data.quiz);
+        showCareersPanel(data.careers);
+        updateReviseCard();
         setupFeynmanPanel();
         el('askBar').style.display = 'block';
         populateAskChips(data.rabbitHoles);
@@ -873,6 +850,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHistory();
   setupDailyChallenge();
   wire();
+  setupLearningUI();
   setupOnboarding();
   setTimeout(updateHUD, 400);
 

@@ -11,7 +11,7 @@ function initAudio() {
   if (_audioCtx) return _audioCtx;
   try {
     _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch {}
+  } catch { /* no Web Audio here: the app simply stays silent */ }
   return _audioCtx;
 }
 
@@ -50,7 +50,7 @@ function playChalkSound() {
     gain.connect(ctx.destination);
     src.start(now);
     src.stop(now + 0.045);
-  } catch {}
+  } catch { /* source already stopped */ }
 }
 
 function playEraserSound() {
@@ -76,7 +76,7 @@ function playEraserSound() {
     gain.connect(ctx.destination);
     src.start(now);
     src.stop(now + 0.16);
-  } catch {}
+  } catch { /* source already stopped */ }
 }
 
 function sound(type) {

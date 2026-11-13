@@ -1163,3 +1163,43 @@ body {
   width: 0%;
   background: var(--accent);
 }
+
+
+/* ── Learning insights, revision, careers ─────────────────── */
+.insights-modal{max-width:640px;width:92vw;max-height:88vh;overflow:auto}
+.ins-tabs{display:flex;gap:6px;margin:6px 0 12px}
+.ins-tab{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:inherit;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit;font-size:12px}
+.ins-tab.active{border-color:var(--accent,#22c55e);color:var(--accent,#22c55e);font-weight:700}
+.ins-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.ins-stat{background:rgba(255,255,255,.05);border-radius:10px;padding:8px;text-align:center}
+.ins-stat b{display:block;font-size:1.3rem}
+.ins-stat span{font-size:.7rem;opacity:.75}
+.ins-callout{margin:6px 0;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.06);font-size:.85rem}
+.ins-callout.weak{border-left:3px solid #ff8a80}
+.ins-callout.strong{border-left:3px solid #7bd88f}
+.ins-empty{opacity:.75;font-size:.85rem;margin:8px 0}
+.ins-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ins-row{display:grid;grid-template-columns:minmax(90px,1.2fr) 2fr 112px;gap:8px;align-items:center;font-size:.82rem}
+.ins-topic{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ins-num{opacity:.8;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.ins-bar{height:8px;background:rgba(255,255,255,.12);border-radius:6px;overflow:hidden}
+.ins-bar i{display:block;height:100%;background:#e0b23c}
+.ins-bar i.weak{background:#ff8a80}.ins-bar i.strong{background:#7bd88f}
+.ins-actions{display:flex;gap:12px;align-items:center;margin:12px 0 6px;flex-wrap:wrap}
+.ins-check{font-size:.8rem;opacity:.85}
+.revise-card{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:12px;border:1px dashed rgba(255,255,255,.3);border-radius:10px;font-size:.82rem}
+.revise-card .quiz-btn{white-space:nowrap}
+.quiz-reteach{margin-top:8px;padding:8px 10px;border-left:3px solid #ffd54a;background:rgba(255,213,74,.1);border-radius:6px}
+.careers-box{margin-top:14px;padding:10px 12px;border:1px solid rgba(255,255,255,.18);border-radius:10px}
+.careers-title{font-weight:700;margin-bottom:6px;font-size:.85rem}
+.career-item{font-size:.82rem;padding:3px 0;opacity:.92}
+
+/* ── Accessibility modes ──────────────────────────────────── */
+body.a11y-readable,body.a11y-readable button,body.a11y-readable input,body.a11y-readable select{font-family:Verdana,"Trebuchet MS",Tahoma,sans-serif!important;letter-spacing:.04em;word-spacing:.12em}
+body.a11y-readable{line-height:1.7}
+body.a11y-bigtext{font-size:118%}
+body.a11y-bigtext .hud-btn,body.a11y-bigtext .ctrl-btn,body.a11y-bigtext .quiz-opt,body.a11y-bigtext .setting-desc{font-size:1.1em}
+body.a11y-contrast{--text:#fff}
+body.a11y-contrast .modal,body.a11y-contrast .rs-panel,body.a11y-contrast .hud-btn,body.a11y-contrast .ctrl-btn,body.a11y-contrast .quiz-opt{border-color:#fff!important}
+body.a11y-contrast .setting-desc,body.a11y-contrast .ins-stat span{opacity:1;color:#fff}
+.hud-btn:focus-visible,.ctrl-btn:focus-visible,.quiz-opt:focus-visible,.toggle-btn:focus-visible,.ins-tab:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}

@@ -120,7 +120,7 @@ function load() {
 function save() {
   try {
     localStorage.setItem('pb_v2', JSON.stringify(STATE));
-  } catch {}
+  } catch { /* storage full or blocked (private mode): progress just will not persist */ }
 }
 
 function el(id) {

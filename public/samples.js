@@ -723,6 +723,59 @@ if (typeof window !== 'undefined') {
   window.getFallbackLesson = getFallbackLesson;
 }
 
+/* ── Teaching extras for the curated lessons ─────────────────────
+   reteach: the same idea through a different analogy, shown when a student misses a question.
+   careers: where the topic is used in real jobs. Kept separate from the lesson text so the
+   hand-written lessons above stay untouched. */
+const SAMPLE_EXTRAS = {
+  photosynthesis: {
+    careers: ['Agricultural scientist: raises crop yield by tuning light and water', 'Botanist: studies how plants capture energy', 'Energy researcher: copies leaf chemistry to make solar fuels'],
+    reteach: ['Think of a leaf as a tiny kitchen: its stomata are the doors that let in carbon dioxide, the air ingredient for making sugar.', 'Chloroplasts are factories, and the thylakoid membranes are the solar-panel stacks inside where light is first caught.', 'Plants store captured sunlight as glucose, like charging a battery: sugar is the energy saved for later.'],
+  },
+  newtons_laws: {
+    careers: ['Mechanical engineer: designs machines using force and motion', 'Aerospace engineer: plans rocket thrust and orbits', 'Car safety engineer: designs crash protection around inertia'],
+    reteach: ['Your body wants to keep moving at the car’s old speed, like a rolling ball that keeps going until something stops it.', 'Pushing an empty cart is easy. Double the load and the same push speeds it up only half as much.', 'A balloon you let go flies forward because air rushes backward. A rocket pushes gas back, and the gas pushes the rocket forward.'],
+  },
+  french_revolution: {
+    careers: ['Historian: explains how revolutions change societies', 'Lawyer or policy maker: studies the origins of citizens’ rights', 'Journalist: analyses power, protest and public opinion'],
+    reteach: ['Imagine a school where only the poorest students pay all the fees while richer ones pay nothing. That was the Third Estate’s burden.', 'The Bastille was a prison and a symbol of royal power, so storming it meant the crowd taking the king’s locked front gate.', 'Robespierre led the Committee of Public Safety during the Terror, and in the end the fear he helped create turned on him.'],
+  },
+  dna_genetics: {
+    careers: ['Genetic counsellor: explains inherited traits to families', 'Biotechnologist: edits genes to build medicines', 'Forensic scientist: matches DNA evidence in investigations'],
+    reteach: ['DNA bases fit like puzzle pieces: A only locks with T, and C only locks with G.', 'mRNA is a photocopy of one recipe page from the DNA cookbook, carried out to the ribosome kitchen.', 'Codons are three-letter words: each group of three bases spells out one amino acid in the protein chain.'],
+  },
+  python_basics: {
+    careers: ['Software developer: builds apps and websites', 'Data analyst: cleans and studies data with code', 'AI engineer: trains and deploys machine-learning models'],
+    reteach: ['A function is a recipe card with a name: define it once with def, then cook that dish again just by calling its name.', 'A list is a numbered shopping list in square brackets: ordered, and you can add, remove or change items.', 'Python counts from zero like a ruler: the first mark is 0, so the first item sits at position 0.'],
+  },
+  quadratic_equations: {
+    careers: ['Civil engineer: models arches and bridge curves', 'Game developer: simulates the paths of thrown objects', 'Economist: finds maximum profit using curves'],
+    reteach: ['Standard form lines up every part: an x-squared term, an x term and a plain number, all set equal to zero.', 'The discriminant tells you how many times the parabola crosses the x-axis. Positive means it cuts through at two separate points.', 'Throw a ball and trace its path. That smooth U-shaped arc is what a quadratic graph looks like.'],
+  },
+  internet_works: {
+    careers: ['Network engineer: keeps data moving between systems', 'Cybersecurity analyst: protects traffic and servers', 'Web developer: builds services that run over the internet'],
+    reteach: ['DNS is the internet’s phone book: look up a name like google.com and it gives back the number to call.', 'Data is a long letter torn into numbered postcards. Each may take a different route and all are reassembled at the end.', 'TCP is registered post: every packet is numbered, receipts confirm arrival and missing ones are sent again.'],
+  },
+  climate_change: {
+    careers: ['Climate scientist: models warming and future scenarios', 'Renewable-energy engineer: designs low-carbon power', 'Environmental policy analyst: shapes emission rules'],
+    reteach: ['Burning coal, oil and gas releases carbon that was locked underground for millions of years, like opening a long-sealed storeroom into the air.', 'Greenhouse gases act like a blanket: sunlight passes in, but outgoing heat is absorbed and sent back, keeping Earth warmer.', 'Carbon sinks are Earth’s sponges: oceans, forests and peatlands soak up carbon dioxide so less stays in the air.'],
+  },
+  ohms_law: {
+    careers: ['Electrician: sizes wires and fuses safely', 'Electronics engineer: designs circuits and chips', 'Solar installer: plans panels, voltage and current'],
+    reteach: ['Think of water in a pipe: current is how much water flows past each second, just as I is how much charge flows.', 'More voltage is more water pressure. With the same pipe, triple the push gives triple the flow.', 'Resistance is how narrow the pipe is, and we measure that narrowness in ohms, written with the Greek letter omega.'],
+  },
+  water_cycle: {
+    careers: ['Hydrologist: tracks rivers, rain and groundwater', 'Meteorologist: forecasts weather from evaporation and clouds', 'Water-resource engineer: plans supply and flood control'],
+    reteach: ['When warm invisible vapour rises and cools, it clumps into tiny droplets, like mist forming on a cold glass of water.', 'Plants sweat through tiny leaf pores, releasing water vapour into the air, a bit like breathing out moisture.', 'The sun is the cycle’s engine: its heat evaporates water and drives the winds that carry clouds around.'],
+  },
+};
+Object.entries(SAMPLE_EXTRAS).forEach(([key, extra]) => {
+  const lesson = SAMPLE_LESSONS[key];
+  if (!lesson) return;
+  lesson.careers = extra.careers;
+  lesson.quiz.forEach((q, n) => { if (extra.reteach[n]) q.reteach = extra.reteach[n]; });
+});
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SAMPLE_LESSONS,

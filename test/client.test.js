@@ -105,6 +105,10 @@ describe('SlateMind Frontend Modules Unit Test Suite', () => {
     // Load quiz.js into context
     const quizCode = fs.readFileSync(path.join(__dirname, '../public/quiz.js'), 'utf8');
     vm.runInContext(quizCode, context);
+
+    // Load learning.js (answer tracking used by quiz.js)
+    const learningCode = fs.readFileSync(path.join(__dirname, '../public/learning.js'), 'utf8');
+    vm.runInContext(learningCode, context);
   });
 
   describe('1. State & Persistence (state.js)', () => {
@@ -234,7 +238,7 @@ describe('SlateMind Frontend Modules Unit Test Suite', () => {
         answerQ(0, ${JSON.stringify(q)});
       `, context);
 
-      let score = vm.runInContext('window.quizScore;', context);
+      const score = vm.runInContext('window.quizScore;', context);
       let combo = vm.runInContext('window.quizCombo;', context);
       assert.equal(score, 1);
       assert.equal(combo, 1);

@@ -54,7 +54,7 @@ npm start
 3. Add `GROQ_API_KEY` in **Settings → Environment Variables**
 4. Deploy ✓
 
-No `vercel.json` needed — `/api/*.js` are auto-detected as serverless functions.
+A `vercel.json` is included: it serves `public/` and routes `/api/*` to the serverless functions.
 
 ---
 
@@ -108,6 +108,50 @@ ai-teacher-gamified/
 ## 📝 Notes
 
 - Groq API key is **server-side only** — never sent to the browser
-- All game progress is stored in `localStorage` under `pb_state_v2`
+- All game progress is stored in `localStorage` under `pb_v2`
 - The canvas engine uses `devicePixelRatio` for crisp rendering on HiDPI screens
 - Checkpoint blocks pause the writing animation and show a modal
+
+---
+
+## Configuration
+
+| Variable | Purpose |
+|---|---|
+| `GROQ_API_KEY` | Primary AI provider |
+| `OPENAI_API_KEY` | Optional backup provider, used if Groq fails |
+| `GROQ_MODEL`, `OPENAI_MODEL` | Optional model overrides |
+| `ALLOWED_ORIGINS` | Extra comma-separated origins allowed by CORS (exact match, e.g. `https://myschool.example`) |
+
+With no key, SlateMind runs in **offline mode**: the hand-written master lessons still work, an unknown topic gets a clearly labelled generic outline (no XP), and follow-up questions and Feynman grading say they need a live AI instead of inventing answers.
+
+## Development
+
+```bash
+npm test        # server + browser-module tests (uses a local mock AI, no key needed)
+npm run lint    # ESLint
+```
+
+CI runs both on every push (`.github/workflows/ci.yml`).
+
+**Code map**
+
+- `lib/providers.js`: the AI provider chain (Groq, then OpenAI) with timeouts and fallback
+- `lib/groq.js`: prompts, JSON validation with one repair retry, lesson and answer generation
+- `lib/schema.js`: zod schemas (lenient lists: one bad block is dropped, not the whole lesson)
+- `lib/http.js`: shared request parsing and error responses (provider errors are never sent to the browser)
+- `lib/config.js`: limits, timeouts and CORS defaults in one place
+- `public/api.js`: the browser's single `fetch` wrapper (timeout and error mapping)
+
+## Learning features (all local, no accounts)
+
+- **Personal setup**: pick a level (Beginner to College) and a language (English, Hindi, Hinglish) in Settings. Lessons and follow-up answers follow them.
+- **Adaptive re-teach**: a wrong quiz answer shows the same idea through a different analogy, in the quiz panel and written on the board.
+- **Spaced revision**: missed questions return after 1, 3, 7 and 14 days. The Quiz tab shows what is due.
+- **Learning insights** (📊 button): accuracy, strengths and weak topics, computed on the device.
+- **Teacher view**: students export a small report (scores per topic only, name optional). A teacher adds several files and sees which topic to re-teach first. Files are read in the browser and never uploaded.
+- **Accessibility**: Easy-Reading mode, larger text, high contrast, and a Listen button that reads the lesson aloud (uses the browser's speech voices).
+- **Career links**: each lesson lists real jobs that use the topic.
+
+Code: `public/learning.js` (logic + UI), tested in `test/learning.test.js`.
+

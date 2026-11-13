@@ -10,6 +10,7 @@
   <meta property="og:type" content="website"/>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>"/>
   <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
   <meta name="theme-color" content="#1a3a2a"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Share+Tech+Mono&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
@@ -65,6 +66,7 @@
   <div class="hud-right">
     <button class="hud-btn" id="constellationBtn" title="View your Knowledge Constellation">🌌 Constellation</button>
     <button class="hud-btn" id="fullscreenBtn" title="Fullscreen board">⛶</button>
+    <button class="hud-btn" id="insightsBtn" title="Learning insights">📊 Insights</button>
     <button class="hud-btn" id="badgesBtn">🏅 Badges</button>
     <button class="hud-btn" id="leaderboardBtn">🏆</button>
     <button class="hud-btn" id="settingsBtn">⚙️</button>
@@ -200,6 +202,7 @@
       <button class="ctrl-btn" id="clearBtn">🗑️ Clear</button>
       <button class="ctrl-btn" id="screenshotBtn">📷 Save</button>
       <button class="ctrl-btn" id="exportHtmlBtn" title="Export self-contained offline lesson file">💾 .slatemind</button>
+      <button class="ctrl-btn" id="listenBtn" title="Read the lesson aloud">🔊 Listen</button>
       <button class="ctrl-btn ctrl-fs" id="boardFsBtn" title="Fullscreen board">⛶ Present</button>
     </div>
 
@@ -241,6 +244,7 @@
     <div class="rs-panel active" id="panel-fact">
       <div class="rs-empty" id="factEmpty">Complete a lesson to see the fun fact! 🤯</div>
       <div class="fact-text" id="factText" style="display:none"></div>
+      <div class="careers-box" id="careersBox" style="display:none"></div>
     </div>
 
     <div class="rs-panel" id="panel-terms">
@@ -249,6 +253,10 @@
     </div>
 
     <div class="rs-panel" id="panel-quiz">
+      <div class="revise-card" id="reviseCard">
+        <div class="revise-text" id="reviseText">Questions you miss come back here for spaced revision.</div>
+        <button class="quiz-btn" id="reviseBtn" disabled>🔁 Revise</button>
+      </div>
       <div class="rs-empty" id="quizEmpty">Complete a lesson to unlock the quiz! 🧠</div>
 
       <!-- Quiz -->
@@ -326,6 +334,30 @@
         <h3>Your galaxy is currently empty</h3>
         <p>Explore lessons and rabbit holes to ignite your first stars in the constellation!</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="insightsOverlay">
+  <div class="modal insights-modal" role="dialog" aria-labelledby="insTitle">
+    <button class="modal-close" data-close="insightsOverlay" aria-label="Close">✕</button>
+    <h2 class="modal-title" id="insTitle">📊 Learning Insights</h2>
+    <div class="ins-tabs" role="tablist">
+      <button class="ins-tab active" data-ins="me" role="tab">My progress</button>
+      <button class="ins-tab" data-ins="class" role="tab">Teacher view</button>
+    </div>
+    <div id="insMe">
+      <div id="insMeBody"></div>
+      <div class="ins-actions">
+        <button class="btn-setting-save" id="exportReportBtn">⬇ Export my report</button>
+        <label class="ins-check"><input type="checkbox" id="reportName"/> include my name</label>
+      </div>
+      <p class="setting-desc">The report holds scores per topic only. No lesson text, no answers. Share it with a teacher if you like.</p>
+    </div>
+    <div id="insClass" style="display:none">
+      <p class="setting-desc">Teachers: collect the report files your students export and add them here. They are read on this device only and are never uploaded.</p>
+      <input type="file" id="classFiles" accept="application/json" multiple aria-label="Student report files"/>
+      <div id="insClassBody"></div>
     </div>
   </div>
 </div>
@@ -496,6 +528,52 @@
 
     <!-- Section 4: Data & Preferences -->
     <div class="settings-section">
+      <div class="settings-sec-title">🧠 Learning &amp; Accessibility</div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="profLevel">Your Level</label>
+          <span class="setting-desc">Lessons match this depth and vocabulary</span>
+        </div>
+        <select class="setting-text-input" id="profLevel">
+          <option>Beginner</option><option>Class 6-8</option><option>Class 9-10</option><option>Class 11-12</option><option>College</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="profLang">Language</label>
+          <span class="setting-desc">Lessons and answers are written in this language</span>
+        </div>
+        <select class="setting-text-input" id="profLang"><option>English</option><option>Hindi</option><option>Hinglish</option></select>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Easy-Reading Mode</label>
+          <span class="setting-desc">Clearer font with wider letter and line spacing</span>
+        </div>
+        <button class="toggle-btn off" id="a11yReadable" aria-pressed="false">OFF</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Larger Text</label>
+          <span class="setting-desc">Bigger text across the app</span>
+        </div>
+        <button class="toggle-btn off" id="a11yBig" aria-pressed="false">OFF</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>High Contrast</label>
+          <span class="setting-desc">Stronger colours and borders</span>
+        </div>
+        <button class="toggle-btn off" id="a11yContrast" aria-pressed="false">OFF</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-sec-title">💾 Data &amp; Portability</div>
 
       <div class="setting-row">
@@ -557,11 +635,13 @@
   </div>
 </div>
 
+<script src="api.js"></script>
 <script src="audio.js"></script>
 <script src="state.js"></script>
 <script src="samples.js"></script>
 <script src="gamification.js"></script>
 <script src="quiz.js"></script>
+<script src="learning.js"></script>
 <script src="constellation.js"></script>
 <script src="tour.js"></script>
 <script src="whiteboard.js"></script>

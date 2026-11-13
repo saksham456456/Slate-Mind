@@ -5,8 +5,16 @@
 'use strict';
 
 /* ── Interactive Quiz Engine ──────────────────────────────────── */
+/** Back to the "no quiz yet" state, so a previous lesson's questions never linger. */
+function clearQuizPanel() {
+  window.currentQuiz = null;
+  if (el('quizEmpty'))   el('quizEmpty').style.display   = 'block';
+  if (el('quizInner'))   el('quizInner').style.display   = 'none';
+  if (el('resultInner')) el('resultInner').style.display = 'none';
+}
+
 function setupQuizPanel(quiz) {
-  if (!quiz?.length) return;
+  if (!quiz?.length) { clearQuizPanel(); return; }
   window.currentQuiz = quiz;
   window.quizIndex   = 0;
   window.quizScore   = 0;
@@ -66,15 +74,36 @@ function answerQ(chosen, q) {
     window.quizCombo = 0;
     if (window.sound) sound('wrong');
   }
+  recordAnswer(STATE, q._topic || window.lastTopic, q, chosen === correct);
   save();
+  updateReviseCard();
 
   if (el('quizExplanation')) {
-    el('quizExplanation').textContent = q.explanation;
-    el('quizExplanation').style.display = 'block';
+    const box = el('quizExplanation');
+    box.textContent = q.explanation;
+    if (chosen !== correct) showReteach(box, q);
+    box.style.display = 'block';
   }
   if (el('quizNextBtn')) {
     el('quizNextBtn').style.display = 'inline-block';
     el('quizNextBtn').textContent = window.quizIndex < window.currentQuiz.length - 1 ? 'Next ➤' : 'Results ➤';
+  }
+}
+
+/** After a wrong answer: the same idea through a different analogy, in the panel and (during a lesson) on the board. */
+function showReteach(box, q) {
+  if (!q.reteach || q.reteach === q.explanation) return;
+  const note = document.createElement('div');
+  note.className = 'quiz-reteach';
+  note.textContent = `💡 Another way to see it: ${q.reteach}`;
+  box.appendChild(note);
+  const board = window.wb;
+  const boardFree = board && typeof board.isWriting === 'function' && !board.isWriting();
+  if (!q._cardKey && boardFree) {   // not during revision: the board shows a different lesson then
+    board.appendBlocks([
+      { type: 'emphasize', text: 'Another way to see it', style: 'underline' },
+      { type: 'text', text: q.reteach },
+    ]).catch(() => { /* the board was cleared meanwhile */ });
   }
 }
 
@@ -151,78 +180,88 @@ function setupFeynmanPanel() {
   }
 }
 
+function setText(id, text) {
+  const node = el(id);
+  if (node) node.textContent = text;
+}
+
+/** Fills the result card from a grade the server produced. */
+function renderFeynmanResult(data, input) {
+  const score = Math.round(data.score);
+  const isMaster = data.masteryLevel === 'Feynman Master';
+
+  if (el('feynmanResult')) el('feynmanResult').style.display = 'block';
+  setText('feynmanScore', `${score}%`);
+  setText('feynmanFeedback', data.feedback);
+
+  const badge = el('feynmanBadge');
+  if (badge) {
+    badge.style.display = 'inline-block';
+    badge.className = `feynman-badge-pill ${isMaster ? 'master' : 'sparring'}`;
+    badge.textContent = isMaster ? '🏆 Feynman Master Certified' : `🥋 Sparring: ${data.masteryLevel}`;
+  }
+
+  if (data.xpReward) {
+    awardXP(data.xpReward, 'feynman');
+    setText('feynmanXpEarned', `+${data.xpReward} XP earned!`);
+  } else {
+    setText('feynmanXpEarned', '');
+  }
+
+  const retryBtn = el('feynmanRetryBtn');
+  if (retryBtn) {
+    retryBtn.style.display = isMaster ? 'none' : 'block';
+    retryBtn.onclick = () => { input.focus(); input.select(); };
+  }
+  return { score, isMaster };
+}
+
+/** Writes the verdict on the blackboard and shows the matching notification. */
+async function annotateBoardWithGrade(data, score, isMaster) {
+  const topic = window.lastTopic || 'Concept';
+  if (isMaster) {
+    if (window.sound) sound('perfect');
+    if (window.wb) {
+      await window.wb.appendBlocks([{ type: 'emphasize', text: `✦ Verified Mastery: ${topic} (${score}%)`, style: 'box' }]);
+    }
+    showGameNotif('🎖️', 'FEYNMAN MASTER', `Concept Mastered (${score}%)!`, 'gold', 3000);
+    return;
+  }
+  if (window.sound) sound('complete');
+  if (data.chalkCorrection && window.wb) {
+    await window.wb.appendBlocks([{ type: 'emphasize', text: `Professor Note: ${data.chalkCorrection}`, style: 'underline' }]);
+  }
+  showGameNotif('🥋', 'SPARRING ROUND', `${score}% — Teacher note added to board!`, 'purple', 2500);
+}
+
+/** No grade is shown when grading failed: no score, no badge, no XP. */
+function showFeynmanError(err) {
+  if (el('feynmanResult')) el('feynmanResult').style.display = 'block';
+  setText('feynmanScore', '—');
+  setText('feynmanXpEarned', '');
+  if (el('feynmanBadge')) el('feynmanBadge').style.display = 'none';
+  setText('feynmanFeedback', err.name === 'AbortError'
+    ? 'Grading took too long. Please try again.'
+    : (err.message || 'Could not grade your explanation right now.'));
+  if (el('feynmanRetryBtn')) el('feynmanRetryBtn').style.display = 'block';
+  if (window.sound) sound('error');
+}
+
 async function handleFeynmanSubmit() {
   const input = el('feynmanInput');
   const btn = el('feynmanSubmitBtn');
   if (!input || !btn) return;
   const text = input.value.trim();
-  if (!text) {
-    input.focus();
-    return;
-  }
+  if (!text) { input.focus(); return; }
 
   btn.disabled = true;
   btn.textContent = 'Sparring with Professor…';
-
   try {
-    const res = await fetch('/api/explain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        topic: window.lastTopic || 'Current Topic',
-        explanation: text
-      })
-    });
-    const data = await res.json();
-    const score = data.score ?? 75;
-    const isMaster = score >= 85 || data.masteryLevel === 'Feynman Master';
-
-    if (el('feynmanResult')) el('feynmanResult').style.display = 'block';
-    if (el('feynmanScore')) el('feynmanScore').textContent = `${score}%`;
-    if (el('feynmanFeedback')) el('feynmanFeedback').textContent = data.feedback || 'Great effort explaining!';
-
-    const badge = el('feynmanBadge');
-    if (badge) {
-      badge.style.display = 'inline-block';
-      badge.className = `feynman-badge-pill ${isMaster ? 'master' : 'sparring'}`;
-      badge.textContent = isMaster ? '🏆 Feynman Master Certified' : `🥋 Sparring: ${data.masteryLevel || 'Refining'}`;
-    }
-
-    if (data.xpReward) {
-      awardXP(data.xpReward, 'feynman');
-      if (el('feynmanXpEarned')) el('feynmanXpEarned').textContent = `+${data.xpReward} XP earned!`;
-    }
-
-    const retryBtn = el('feynmanRetryBtn');
-    if (retryBtn) {
-      retryBtn.style.display = isMaster ? 'none' : 'block';
-      retryBtn.onclick = () => {
-        if (input) {
-          input.focus();
-          input.select();
-        }
-      };
-    }
-
-    if (isMaster && window.wb) {
-      if (window.sound) sound('perfect');
-      await window.wb.appendBlocks([
-        { type: 'emphasize', text: `✦ Verified Mastery: ${window.lastTopic || 'Concept'} (${score}%)`, style: 'box' }
-      ]);
-      showGameNotif('🎖️', 'FEYNMAN MASTER', `Concept Mastered (${score}%)!`, 'gold', 3000);
-    } else {
-      if (window.sound) sound('complete');
-      if (data.chalkCorrection && window.wb) {
-        await window.wb.appendBlocks([
-          { type: 'emphasize', text: `Professor Note: ${data.chalkCorrection}`, style: 'underline' }
-        ]);
-      }
-      showGameNotif('🥋', 'SPARRING ROUND', `${score}% — Teacher note added to board!`, 'purple', 2500);
-    }
+    const data = await apiPost('/api/explain', { topic: window.lastTopic || 'Current Topic', explanation: text }, { timeoutMs: 30000 });
+    const { score, isMaster } = renderFeynmanResult(data, input);
+    await annotateBoardWithGrade(data, score, isMaster);
   } catch (err) {
-    if (el('feynmanResult')) el('feynmanResult').style.display = 'block';
-    if (el('feynmanScore')) el('feynmanScore').textContent = 'Reviewed!';
-    if (el('feynmanFeedback')) el('feynmanFeedback').textContent = 'Your explanation was reviewed. Keep practicing expressing concepts concisely.';
+    showFeynmanError(err);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Spar Again ➤';
@@ -231,6 +270,7 @@ async function handleFeynmanSubmit() {
 
 // Window bindings
 window.setupQuizPanel = setupQuizPanel;
+window.clearQuizPanel = clearQuizPanel;
 window.renderQ = renderQ;
 window.answerQ = answerQ;
 window.nextQ = nextQ;
