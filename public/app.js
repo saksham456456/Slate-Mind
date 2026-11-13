@@ -496,14 +496,6 @@ function setupOnboarding() {
   } else {
     openModal('splashOverlay');
     ni.focus();
-    // Auto-launch demo after 6 seconds of idle to demonstrate app capabilities automatically
-    const autoTimer = setTimeout(() => {
-      const splash = el('splashOverlay');
-      if (splash && splash.classList.contains('active') && !STATE.hasOnboarded) {
-        launchWith(true);
-      }
-    }, 6000);
-    ni.addEventListener('input', () => clearTimeout(autoTimer), { once: true });
   }
 }
 
