@@ -31,6 +31,7 @@ function showLessonLoading() {
 async function playLesson(data, topic, isDaily) {
   el('boardLoading').style.display = 'none';
   showLessonMeta(topic, data);
+  window.lastLessonData = data;
   window.currentLessonBlocks = data.blocks || [];   // for Listen (read aloud)
   if (window.stopReadAloud) stopReadAloud();
   wb = wb || window.wb;
@@ -459,12 +460,13 @@ function toggleFullscreen() {
   setTimeout(() => (wb || window.wb)?._resize(), 300);
 }
 
-/* ── Onboarding Experience ────────────────────────────────────── */
+/* ── Onboarding Experience & Studio Splash ───────────────────────── */
 function setupOnboarding() {
-  const ni = el('studentNameInput'), sb = el('startAdventureBtn');
-  ni.addEventListener('keydown', e => { if (e.key === 'Enter') sb.click(); });
-  sb.addEventListener('click', () => {
-    initAudio();
+  const ni = el('studentNameInput'), sb = el('startAdventureBtn'), db = el('startDemoBtn');
+  if (!ni || !sb) return;
+
+  const launchWith = (runLiveDemo = false) => {
+    if (window.initAudio) initAudio();
     const name = (ni.value.trim() || 'Student');
     STATE.playerName   = name;
     STATE.hasOnboarded = true;
@@ -473,14 +475,35 @@ function setupOnboarding() {
     updateHUD();
     closeModal('splashOverlay');
     if (window.sound) sound('levelup');
-    setTimeout(() => showGameNotif('🎓', 'WELCOME!', `Ready to learn, ${name}?`, 'green', 2500), 500);
-  });
+
+    if (runLiveDemo) {
+      if (typeof window.startAppTour === 'function') {
+        setTimeout(() => window.startAppTour({ loadDemoLesson: true }), 350);
+      }
+    } else {
+      setTimeout(() => showGameNotif('🎓', 'WELCOME!', 'Ready to learn, ' + name + '?', 'green', 2500), 500);
+    }
+  };
+
+  ni.addEventListener('keydown', e => { if (e.key === 'Enter') sb.click(); });
+  sb.addEventListener('click', () => launchWith(false));
+  if (db) db.addEventListener('click', () => launchWith(true));
+
   const saved = localStorage.getItem('pb_studentName');
   if (STATE.hasOnboarded && saved) {
     STATE.playerName = saved;
     closeModal('splashOverlay');
   } else {
+    openModal('splashOverlay');
     ni.focus();
+    // Auto-launch demo after 6 seconds of idle to demonstrate app capabilities automatically
+    const autoTimer = setTimeout(() => {
+      const splash = el('splashOverlay');
+      if (splash && splash.classList.contains('active') && !STATE.hasOnboarded) {
+        launchWith(true);
+      }
+    }, 6000);
+    ni.addEventListener('input', () => clearTimeout(autoTimer), { once: true });
   }
 }
 
@@ -544,38 +567,187 @@ function wire() {
   el('screenshotBtn').addEventListener('click', () => (wb || window.wb)?.saveAsImage(el('metaTopic')?.textContent));
   el('exportHtmlBtn')?.addEventListener('click', () => {
     const topic = window.lastTopic || 'Lesson';
-    const fact = el('factText')?.textContent || '';
-    const dateStr = new Date().toLocaleDateString();
+    const data = window.lastLessonData || {};
+    const blocks = window.currentLessonBlocks || data.blocks || [];
+    const quiz = window.currentQuiz || data.quiz || [];
+    const terms = data.keyTerms || [];
+    const rabbitHoles = data.rabbitHoles || [];
+    const careers = data.careers || [];
+    const fact = el('factText')?.textContent || data.funFact || '';
+    const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    const studentName = esc(STATE.playerName || 'Student');
+    const gradeLevel = esc(STATE.profile?.level || 'Class 11-12');
+    const lang = esc(STATE.profile?.language || 'English');
+
+    // Build blackboard blocks HTML
+    let blocksHtml = '';
+    blocks.forEach(b => {
+      if (!b) return;
+      if (b.type === 'heading') {
+        blocksHtml += `<h2 class="chalk-heading">${esc(b.text)}</h2>`;
+      } else if (b.type === 'text') {
+        blocksHtml += `<p class="chalk-text">${esc(b.text)}</p>`;
+      } else if (b.type === 'bullet') {
+        blocksHtml += `<ul class="chalk-bullets">${(b.items || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul>`;
+      } else if (b.type === 'equation') {
+        blocksHtml += `<div class="chalk-equation">${esc(b.text)}</div>`;
+      } else if (b.type === 'emphasize') {
+        blocksHtml += `<div class="chalk-emphasize style-${esc(b.style || 'underline')}">✦ ${esc(b.text)}</div>`;
+      } else if (b.type === 'diagram') {
+        const shapeLabels = (b.shapes || []).map(s => s.label).filter(Boolean);
+        blocksHtml += `<div class="chalk-diagram">
+          <div class="cd-title">📐 Conceptual Diagram Flow:</div>
+          <div class="cd-nodes">${shapeLabels.map(l => `<span class="cd-node">${esc(l)}</span>`).join(' ➔ ')}</div>
+        </div>`;
+      } else if (b.type === 'checkpoint') {
+        blocksHtml += `<div class="chalk-checkpoint">
+          <b>🤔 Checkpoint:</b> ${esc(b.question)}
+          ${b.hint ? `<div class="cp-hint">💡 Hint: ${esc(b.hint)}</div>` : ''}
+        </div>`;
+      }
+    });
+
+    // Build practice quiz HTML
+    let quizHtml = '';
+    if (quiz.length) {
+      quizHtml = `<div class="lesson-section">
+        <h3 class="section-title">📝 Practice Assessment & Diagnostics</h3>
+        <div class="quiz-items">${quiz.map((q, idx) => `
+          <div class="quiz-item">
+            <div class="qi-q"><b>Q${idx + 1}.</b> ${esc(q.question)}</div>
+            <div class="qi-options">${(q.options || []).map((opt, i) => `
+              <div class="qi-opt ${i === q.correct ? 'opt-correct' : ''}">
+                <span class="opt-letter">${String.fromCharCode(65 + i)}</span> ${esc(opt)} ${i === q.correct ? '<b>(Correct Answer)</b>' : ''}
+              </div>`).join('')}
+            </div>
+            <div class="qi-exp"><b>Explanation:</b> ${esc(q.explanation)}</div>
+            ${q.reteach ? `<div class="qi-reteach">💡 <b>Pedagogical Analogy:</b> ${esc(q.reteach)}</div>` : ''}
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    // Build key terms HTML
+    let termsHtml = '';
+    if (terms.length) {
+      termsHtml = `<div class="lesson-section">
+        <h3 class="section-title">🔑 Core Conceptual Vocabulary</h3>
+        <div class="terms-grid">${terms.map(t => `<div class="term-pill">${esc(t)}</div>`).join('')}</div>
+      </div>`;
+    }
+
+    // Build rabbit holes HTML
+    let rhHtml = '';
+    if (rabbitHoles.length) {
+      rhHtml = `<div class="lesson-section">
+        <h3 class="section-title">🕳️ Curiosity Rabbit Holes & Deep Questions</h3>
+        <ul class="rh-list">${rabbitHoles.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+      </div>`;
+    }
+
+    // Build careers HTML
+    let careersHtml = '';
+    if (careers.length) {
+      careersHtml = `<div class="lesson-section">
+        <h3 class="section-title">🚀 Skill Development & NEP 2020 Career Pathways</h3>
+        <div class="careers-grid">${careers.map(c => `<div class="career-pill">💼 ${esc(c)}</div>`).join('')}</div>
+      </div>`;
+    }
+
     const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>SlateMind Lesson — ${esc(topic)}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SlateMind Master Lesson — ${esc(topic)}</title>
   <style>
-    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #1a120b; color: #f0ece0; padding: 30px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
-    h1 { color: #f4d03f; border-bottom: 2px dashed rgba(244,208,63,0.3); padding-bottom: 10px; }
-    .badge { display: inline-block; background: #1a3a2a; border: 1px solid #58d68d; color: #58d68d; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: bold; margin-bottom: 20px; }
-    .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 18px; margin: 16px 0; }
-    .fact { color: #85c1e9; font-style: italic; }
-    footer { margin-top: 40px; color: #888; font-size: 12px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; }
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap');
+    :root { --slate-bg: #111a14; --chalk-white: #f0ece0; --chalk-yellow: #f4d03f; --chalk-green: #58d68d; --chalk-blue: #85c1e9; --chalk-pink: #f1948a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #0c120e; color: #f0ece0; padding: 24px; line-height: 1.6; }
+    .container { max-width: 900px; margin: 0 auto; background: var(--slate-bg); border: 4px solid #3d2b1f; border-radius: 16px; padding: 36px; box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
+    .header-bar { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px dashed rgba(244,208,63,0.25); padding-bottom: 20px; margin-bottom: 24px; flex-wrap: wrap; gap: 14px; }
+    .brand-tag { font-family: 'Caveat', cursive; font-size: 26px; color: var(--chalk-yellow); }
+    .meta-tag { font-size: 13px; color: rgba(240,236,224,0.7); line-height: 1.5; }
+    .print-btn { background: #22c55e; color: #000; font-weight: 700; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .print-btn:hover { background: #16a34a; color: #fff; }
+    .lesson-title { font-family: 'Caveat', cursive; font-size: 42px; color: var(--chalk-yellow); margin-bottom: 18px; line-height: 1.2; }
+    .board-frame { background: #16241b; border: 2px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 28px; margin-bottom: 28px; box-shadow: inset 0 0 40px rgba(0,0,0,0.5); }
+    .chalk-heading { font-family: 'Caveat', cursive; font-size: 32px; color: var(--chalk-yellow); border-bottom: 1.5px solid rgba(244,208,63,0.3); padding-bottom: 6px; margin: 16px 0 12px; }
+    .chalk-text { font-family: 'Caveat', cursive; font-size: 24px; color: var(--chalk-white); margin-bottom: 14px; }
+    .chalk-bullets { margin: 12px 0 16px 24px; font-family: 'Caveat', cursive; font-size: 23px; color: var(--chalk-white); }
+    .chalk-bullets li { margin-bottom: 8px; }
+    .chalk-equation { font-family: 'Share Tech Mono', monospace; font-size: 22px; color: var(--chalk-green); background: rgba(88,214,141,0.08); border: 1.5px dashed var(--chalk-green); border-radius: 8px; padding: 12px 18px; margin: 16px 0; }
+    .chalk-emphasize { font-family: 'Caveat', cursive; font-size: 24px; color: var(--chalk-pink); font-weight: 700; margin: 14px 0; padding: 6px 12px; background: rgba(241,148,138,0.08); border-radius: 6px; display: inline-block; }
+    .chalk-diagram { background: rgba(133,193,233,0.07); border: 1px solid rgba(133,193,233,0.25); border-radius: 8px; padding: 14px; margin: 16px 0; }
+    .cd-title { font-size: 13px; font-weight: 700; color: var(--chalk-blue); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cd-nodes { font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--chalk-white); }
+    .cd-node { background: rgba(255,255,255,0.09); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.18); }
+    .chalk-checkpoint { background: rgba(240,165,0,0.1); border-left: 4px solid #f0a500; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 15px; }
+    .cp-hint { font-size: 13px; color: #f0a500; margin-top: 6px; font-style: italic; }
+    .lesson-section { margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
+    .section-title { font-size: 18px; font-weight: 700; color: #58d68d; margin-bottom: 14px; }
+    .terms-grid, .careers-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .term-pill, .career-pill { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); padding: 6px 14px; border-radius: 14px; font-size: 13px; font-weight: 600; }
+    .rh-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .rh-list li { background: rgba(147,51,234,0.12); border-left: 3px solid #a855f7; padding: 8px 14px; border-radius: 6px; font-size: 14px; }
+    .quiz-items { display: flex; flex-direction: column; gap: 16px; margin-top: 10px; }
+    .quiz-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; padding: 16px; }
+    .qi-q { font-size: 15px; margin-bottom: 10px; }
+    .qi-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .qi-opt { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 6px 12px; border-radius: 6px; font-size: 13px; }
+    .qi-opt.opt-correct { background: rgba(34,197,94,0.15); border-color: #22c55e; color: #4ade80; }
+    .opt-letter { font-weight: 800; display: inline-block; width: 20px; }
+    .qi-exp { font-size: 13px; color: rgba(240,236,224,0.8); }
+    .qi-reteach { font-size: 13px; color: #f4d03f; background: rgba(244,208,63,0.1); border-radius: 4px; padding: 6px 10px; margin-top: 6px; }
+    footer { margin-top: 36px; text-align: center; font-size: 12px; color: rgba(240,236,224,0.4); border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 18px; }
+    @media print {
+      body { background: #fff!important; color: #111!important; padding: 0; }
+      .container { border: none!important; box-shadow: none!important; max-width: 100%!important; padding: 10px!important; }
+      .board-frame { background: #f8fafc!important; border: 1px solid #cbd5e1!important; }
+      .chalk-heading, .chalk-text, .chalk-bullets { color: #0f172a!important; }
+      .chalk-equation { background: #f1f5f9!important; color: #047857!important; border-color: #047857!important; }
+      .print-btn { display: none!important; }
+    }
   </style>
 </head>
 <body>
-  <div class="badge">SlateMind Standalone Lesson File</div>
-  <h1>🎓 ${esc(topic)}</h1>
-  <div class="card">
-    <h3>Fun Fact</h3>
-    <p class="fact">${esc(fact || 'Completed on ' + dateStr)}</p>
+  <div class="container">
+    <div class="header-bar">
+      <div>
+        <div class="brand-tag">SlateMind • AI Blackboard Studio</div>
+        <div class="meta-tag">Learner: <b>${studentName}</b> • Level: <b>${gradeLevel}</b> • Language: <b>${lang}</b> • Date: ${dateStr}</div>
+      </div>
+      <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    </div>
+
+    <h1 class="lesson-title">🎓 ${esc(topic)}</h1>
+
+    <div class="board-frame">
+      ${blocksHtml || '<p class="chalk-text">Lesson content available on blackboard.</p>'}
+    </div>
+
+    ${termsHtml}
+    ${quizHtml}
+    ${careersHtml}
+    ${rhHtml}
+
+    ${fact ? `<div class="lesson-section"><h3 class="section-title">💡 Fun Fact</h3><p style="font-size:14px;color:var(--chalk-blue)">${esc(fact)}</p></div>` : ''}
+
+    <footer>
+      Exported offline via SlateMind • Local-First Adaptive AI Studio for Students & Teachers (NEP 2020 Aligned)
+    </footer>
   </div>
-  <footer>Exported offline via SlateMind • Local-first tool for learning and teaching</footer>
 </body>
 </html>`;
-    const blob = new Blob([html], { type: 'text/html' });
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const dl = document.createElement('a');
     dl.href = URL.createObjectURL(blob);
-    dl.download = `slatemind-${topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+    dl.download = `slatemind-${topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-lesson.html`;
     dl.click();
-    showGameNotif('💾', 'LESSON FILE SAVED', 'Self-contained offline lesson downloaded', 'green', 2000);
+    setTimeout(() => URL.revokeObjectURL(dl.href), 3000);
+    showGameNotif('💾', 'OFFLINE LESSON READY', 'Complete interactive lesson with quiz & notes exported!', 'green', 2500);
   });
   el('boardFsBtn').addEventListener('click', toggleFullscreen);
   el('fullscreenBtn').addEventListener('click', toggleFullscreen);

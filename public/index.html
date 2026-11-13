@@ -75,24 +75,31 @@
   </div>
 </header>
 
-<!-- ══ SPLASH ════════════════════════════════════════════════ -->
+<!-- ══ CINEMATIC BLACKBOARD SPLASH & ONBOARDING ═══════════════════ -->
 <div class="modal-overlay active" id="splashOverlay">
   <div class="modal splash-modal">
+    <div class="splash-badge-top">✦ NEP 2020 • CBSE/ICSE CURRICULUM • ZERO DATA LEAK ✦</div>
     <div class="splash-prof">🎓</div>
     <h1 class="splash-title">SlateMind</h1>
-    <p class="splash-sub">AI-Powered Gamified Blackboard Teacher</p>
-    <div class="splash-tagline">Learn. Level Up. Master Anything.</div>
+    <p class="splash-sub">The Intelligent Blackboard Studio for Students & Teachers</p>
+    <div class="splash-tagline">Organic Chalk Handwriting • Dynamic Geometric Diagrams • Feynman Sparring Diagnostics</div>
+    
     <div class="name-input-wrap">
-      <label for="studentNameInput">What should I call you, student?</label>
-      <input type="text" id="studentNameInput" placeholder="Enter your name…" maxlength="20" autocomplete="off"/>
+      <label for="studentNameInput">What is your name, learner?</label>
+      <input type="text" id="studentNameInput" placeholder="Enter your name (e.g. Aarav, Priya)…" maxlength="24" autocomplete="off"/>
     </div>
-    <button class="btn-primary btn-lg" id="startAdventureBtn">⚡ Begin Your Journey</button>
+    
+    <div class="splash-actions-row">
+      <button class="btn-primary btn-lg" id="startDemoBtn">🎬 Watch Live Studio Demo</button>
+      <button class="btn-secondary btn-lg" id="startAdventureBtn">⚡ Enter Classroom Directly</button>
+    </div>
+
     <div class="splash-features">
-      <div class="feat">📖 AI Lessons</div>
-      <div class="feat">🎮 XP & Levels</div>
-      <div class="feat">🧠 Quizzes</div>
-      <div class="feat">🏅 Badges</div>
-      <div class="feat">🔥 Streaks</div>
+      <div class="feat">📖 Blackboard AI</div>
+      <div class="feat">🧠 Feynman Sparring</div>
+      <div class="feat">🔁 Spaced Revision</div>
+      <div class="feat">🎮 XP & Badges</div>
+      <div class="feat">📊 Printable Reports</div>
     </div>
   </div>
 </div>
@@ -349,8 +356,9 @@
     <div id="insMe">
       <div id="insMeBody"></div>
       <div class="ins-actions">
-        <button class="btn-setting-save" id="exportReportBtn">⬇ Export my report</button>
-        <label class="ins-check"><input type="checkbox" id="reportName"/> include my name</label>
+        <button class="btn-setting-save" id="exportReportBtn">📄 Export PDF / Print Report</button>
+        <button class="btn-setting-save" id="exportJsonBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.2)">⬇ Download JSON</button>
+        <label class="ins-check"><input type="checkbox" id="reportName" checked/> include my name</label>
       </div>
       <p class="setting-desc">The report holds scores per topic only. No lesson text, no answers. Share it with a teacher if you like.</p>
     </div>

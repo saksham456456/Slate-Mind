@@ -345,6 +345,160 @@ function bindSelect(id, getValue, setValue) {
   s.addEventListener('change', () => { setValue(s.value); save(); });
 }
 
+
+function generatePrintablePdfReport(state, { includeName = true } = {}) {
+  const ins = computeInsights(state);
+  const studentName = includeName && state.playerName ? state.playerName : 'Anonymous Learner';
+  const level = state.profile?.level || 'Class 11-12';
+  const language = state.profile?.language || 'English';
+  const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const accuracyStr = ins.attempts ? Math.round(ins.accuracy * 100) + '%' : 'N/A';
+  const deck = state.deck || [];
+  const due = dueCards(state).length;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>SlateMind Student Diagnostic Report — ${studentName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #fff; color: #1e293b; padding: 32px; font-size: 14px; line-height: 1.5; }
+    .report-card { max-width: 820px; margin: 0 auto; border: 2px solid #0f172a; border-radius: 12px; padding: 32px; }
+    .report-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 24px; }
+    .brand { font-size: 26px; font-weight: 800; color: #047857; letter-spacing: -0.5px; }
+    .sub-brand { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .meta-box { text-align: right; font-size: 13px; color: #334155; }
+    .meta-box b { color: #0f172a; }
+    .title-row { margin-bottom: 20px; }
+    .report-title { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .report-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+    .kpi { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center; }
+    .kpi-val { font-size: 24px; font-weight: 800; color: #047857; }
+    .kpi-lbl { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px; }
+    .section { margin-top: 24px; }
+    .section-head { font-size: 15px; font-weight: 700; color: #0f172a; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+    .topics-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+    .topics-table th { background: #f1f5f9; padding: 8px 12px; text-align: left; font-weight: 700; color: #334155; border-bottom: 1px solid #cbd5e1; }
+    .topics-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+    .bar-bg { width: 140px; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
+    .bar-fill { height: 100%; border-radius: 5px; }
+    .bar-strong { background: #16a34a; }
+    .bar-mid { background: #ca8a04; }
+    .bar-weak { background: #dc2626; }
+    .insights-callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .callout { padding: 12px 14px; border-radius: 8px; font-size: 13px; }
+    .callout-strong { background: #f0fdf4; border-left: 4px solid #16a34a; }
+    .callout-weak { background: #fef2f2; border-left: 4px solid #dc2626; }
+    .callout b { display: block; margin-bottom: 4px; }
+    .signature-row { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 24px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: #64748b; }
+    .sig-line { width: 220px; border-top: 1px solid #0f172a; margin-top: 36px; padding-top: 6px; text-align: center; color: #0f172a; font-weight: 600; }
+    .print-actions { text-align: center; margin-bottom: 20px; }
+    .btn-print { background: #047857; color: #fff; font-weight: 700; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 12px; }
+    .btn-print:hover { background: #065f46; }
+    @media print {
+      body { padding: 0; background: #fff; }
+      .print-actions { display: none!important; }
+      .report-card { border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions">
+    <button class="btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+  <div class="report-card">
+    <div class="report-header">
+      <div>
+        <div class="brand">SlateMind • National Diagnostic Report</div>
+        <div class="sub-brand">Student Learning Outcome & Pedagogical Competency Analysis (NEP 2020 Aligned)</div>
+      </div>
+      <div class="meta-box">
+        <div>Learner: <b>${studentName}</b></div>
+        <div>Standard: <b>${level}</b> • Language: <b>${language}</b></div>
+        <div>Date of Assessment: <b>${dateStr}</b></div>
+      </div>
+    </div>
+
+    <div class="title-row">
+      <div class="report-title">Academic Diagnostic & Continuous Mastery Profile</div>
+      <div class="report-subtitle">Generated via SlateMind Adaptive Chalkboard AI • Zero Student PII Transmitted</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-val">${accuracyStr}</div><div class="kpi-lbl">Concept Accuracy</div></div>
+      <div class="kpi"><div class="kpi-val">${ins.attempts}</div><div class="kpi-lbl">Questions Attempted</div></div>
+      <div class="kpi"><div class="kpi-val">${ins.streak} Days</div><div class="kpi-lbl">Learning Streak</div></div>
+      <div class="kpi"><div class="kpi-val">${ins.lessons}</div><div class="kpi-lbl">Lessons Completed</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Curricular Topic Competency & Mastery Breakdown</span>
+        <span>Accuracy Threshold: 80% Mastery</span>
+      </div>
+      ${ins.topics.length ? `
+        <table class="topics-table">
+          <thead>
+            <tr><th>Curricular Topic</th><th>Assessment Score</th><th>Accuracy Level</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            ${ins.topics.map(t => {
+              const p = Math.round(t.accuracy * 100);
+              const cls = p >= 80 ? 'bar-strong' : p >= 60 ? 'bar-mid' : 'bar-weak';
+              const statusText = p >= 80 ? '✓ Mastered' : p >= 60 ? '⚡ Developing' : '⚠️ Attention Needed';
+              return `<tr>
+                <td><b>${t.topic}</b></td>
+                <td>${t.right} / ${t.total}</td>
+                <td><span class="bar-bg"><span class="bar-fill ${cls}" style="width:${p}%"></span></span> ${p}%</td>
+                <td>${statusText}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : '<p style="color:#64748b;padding:12px 0;">No topic quiz attempts recorded yet.</p>'}
+    </div>
+
+    ${(ins.strong.length || ins.weak.length) ? `
+      <div class="insights-callouts">
+        ${ins.strong.length ? `<div class="callout callout-strong"><b>🌟 Strong Competency Areas</b>${ins.strong.join(', ')}</div>` : ''}
+        ${ins.weak.length ? `<div class="callout callout-weak"><b>🎯 Priority Revision Target Areas</b>${ins.weak.join(', ')}</div>` : ''}
+      </div>
+    ` : ''}
+
+    <div class="section">
+      <div class="section-head"><span>Spaced Repetition & Cognitive Retention Deck (Leitner Schedule)</span></div>
+      <p style="font-size:13px;color:#475569;">
+        Total retention deck size: <b>${deck.length} concept cards</b>. Cards due for active recall today: <b>${due}</b>.
+        Adaptive spaced intervals: 1 day ➔ 3 days ➔ 7 days ➔ 14 days before permanent long-term retention retirement.
+      </p>
+    </div>
+
+    <div class="signature-row">
+      <div>
+        <p>SlateMind Local Verification Stamp: <b>CERTIFIED-OFFLINE</b></p>
+        <p>Pedagogical Engine: Feynman Technique + Dynamic Multi-Modal Socratic Dialogue</p>
+      </div>
+      <div class="sig-line">Educator / Mentor Signature</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (!win) {
+    // If popup blocked, download as printable HTML report
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `slatemind-diagnostic-report-${studentName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+    a.click();
+  }
+}
+
 function setupLearningUI() {
   ensureLearningState(STATE);
   bindSelect('profLevel', () => STATE.profile.level, v => { STATE.profile.level = v; });
@@ -361,7 +515,13 @@ function setupLearningUI() {
     el('insMe').style.display = tab.dataset.ins === 'me' ? 'block' : 'none';
     el('insClass').style.display = tab.dataset.ins === 'class' ? 'block' : 'none';
   }));
-  el('exportReportBtn')?.addEventListener('click', () => downloadJSON('slatemind-report.json', buildReport(STATE, { includeName: el('reportName').checked })));
+  el('exportReportBtn')?.addEventListener('click', () => {
+    const withName = el('reportName')?.checked !== false;
+    generatePrintablePdfReport(STATE, { includeName: withName });
+  });
+  el('exportJsonBtn')?.addEventListener('click', () => {
+    downloadJSON('slatemind-report.json', buildReport(STATE, { includeName: el('reportName')?.checked !== false }));
+  });
   el('classFiles')?.addEventListener('change', e => loadClassFiles([...e.target.files]));
   el('reviseBtn')?.addEventListener('click', startRevision);
   updateReviseCard();

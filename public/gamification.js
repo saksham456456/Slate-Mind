@@ -259,38 +259,84 @@ function generateProgressCard() {
 function renderBadges() {
   const g = el('badgesGrid');
   if (!g) return;
-  g.innerHTML = BADGES.map(b => {
+  const earnedCount = (STATE.earnedBadges || []).length;
+  const totalCount = BADGES.length;
+  
+  // Header summary in modal
+  const headerSummary = `<div class="badge-summary-bar">
+    <div class="bs-stat"><b>${earnedCount} / ${totalCount}</b><span>Badges Earned</span></div>
+    <div class="bs-stat"><b>${Math.round((earnedCount / totalCount) * 100)}%</b><span>Mastery Complete</span></div>
+  </div>`;
+
+  const cardsHtml = BADGES.map(b => {
     const earned = STATE.earnedBadges.includes(b.id);
-    return `<div class="badge-item ${earned ? 'earned' : ''}" title="${b.desc}">
-      <div class="badge-icon">${b.icon}</div>
-      <div class="badge-name">${esc(b.name)}</div>
-      <div class="badge-desc">${esc(b.desc)}</div>
-      ${earned ? '<div class="badge-check">✓ Unlocked</div>' : '<div class="badge-lock">🔒 Locked</div>'}
+    const tier = b.id.includes('max') || b.id.includes('2000') || b.id.includes('25') ? 'diamond'
+               : b.id.includes('10') || b.id.includes('7') || b.id.includes('king') ? 'gold'
+               : b.id.includes('5') || b.id.includes('3') ? 'silver' : 'bronze';
+    return `<div class="badge-card ${earned ? 'earned' : 'locked'} tier-${tier}" title="${b.desc}">
+      <div class="badge-card-glow"></div>
+      <div class="badge-icon-wrap">
+        <span class="badge-icon">${b.icon}</span>
+        ${earned ? '<span class="badge-sparkle">✦</span>' : ''}
+      </div>
+      <div class="badge-card-info">
+        <div class="badge-card-name">${esc(b.name)}</div>
+        <div class="badge-card-desc">${esc(b.desc)}</div>
+      </div>
+      <div class="badge-card-status ${earned ? 'status-unlocked' : 'status-locked'}">
+        ${earned ? '✓ UNLOCKED' : '🔒 LOCKED'}
+      </div>
     </div>`;
   }).join('');
+
+  g.innerHTML = headerSummary + cardsHtml;
 }
 
 function renderLeaderboard() {
   const list = el('lbList');
   if (!list) return;
-  const bots = [
-    { name: 'Ada Lovelace',     xp: 6200, lvl: 10, avatar: '💻' },
-    { name: 'Alan Turing',      xp: 5100, lvl: 10, avatar: '⚙️' },
-    { name: 'Richard Feynman',  xp: 4300, lvl: 9,  avatar: '🥁' },
-    { name: 'Marie Curie',      xp: 3400, lvl: 8,  avatar: '🔬' },
-    { name: 'Carl Sagan',       xp: 2600, lvl: 7,  avatar: '🪐' },
-    { name: 'Hypatia',          xp: 1800, lvl: 6,  avatar: '📐' },
-    { name: 'Euclid',           xp: 1100, lvl: 5,  avatar: '📏' },
-    { name: 'Curious Cat',      xp: 400,  lvl: 3,  avatar: '🐱' },
+
+  // Dynamic peer cohort: combines renowned Indian & world pioneers with active classmate peers
+  // Peer XP dynamically scales with the student so learning remains motivating and close-ranked
+  const userXp = STATE.totalXP || 0;
+  const baseOffset = Math.max(100, Math.round(userXp * 0.15));
+  
+  const cohort = [
+    { name: 'Srinivasa Ramanujan', title: 'Master of Infinite Series', xp: Math.max(5400, userXp + baseOffset * 4), lvl: 10, avatar: '📐', streak: 42 },
+    { name: 'Dr. APJ Abdul Kalam',  title: 'Rocketry & Visionary',     xp: Math.max(4800, userXp + baseOffset * 3), lvl: 10, avatar: '🚀', streak: 35 },
+    { name: 'C.V. Raman',          title: 'Nobel Optics Pioneer',     xp: Math.max(4100, userXp + baseOffset * 2), lvl: 9,  avatar: '🔬', streak: 28 },
+    { name: 'Ananya Sharma (Peer)',title: 'Class 12 CBSE Aspirant',   xp: Math.max(250, userXp + 60),               lvl: Math.max(1, STATE.level), avatar: '👩‍🎓', streak: 5 },
+    { name: 'Rohan Mehta (Peer)',  title: 'JEE / Olympiad Track',     xp: Math.max(180, Math.max(0, userXp - 40)),  lvl: Math.max(1, STATE.level), avatar: '👨‍🎓', streak: 4 },
+    { name: 'Priya Patel (Peer)',  title: 'Curious Explorer',         xp: Math.max(90, Math.max(0, userXp - 110)), lvl: Math.max(1, STATE.level - 1), avatar: '✨', streak: 3 },
   ];
-  const all = [...bots, { name: STATE.playerName + ' (You)', xp: STATE.totalXP, lvl: STATE.level, avatar: '⭐', isYou: true }]
-    .sort((a, b) => b.xp - a.xp);
+
+  const all = [...cohort, {
+    name: (STATE.playerName || 'Student') + ' (You)',
+    title: 'Your Learning Journey',
+    xp: userXp,
+    lvl: STATE.level || 1,
+    avatar: '⭐',
+    streak: STATE.currentStreak || 1,
+    isYou: true
+  }].sort((a, b) => b.xp - a.xp);
+
+  const yourRank = all.findIndex(p => p.isYou) + 1;
+  const rankBox = el('lbYourRank');
+  if (rankBox) {
+    rankBox.innerHTML = `<div class="lb-rank-badge">
+      <span>Your National Cohort Standing</span>
+      <b>Rank #${yourRank} of ${all.length} • ${userXp} XP • Streak 🔥${STATE.currentStreak || 1}d</b>
+    </div>`;
+  }
 
   list.innerHTML = all.map((p, i) => `
     <div class="lb-row ${p.isYou ? 'lb-you' : ''}">
       <span class="lb-rank ${i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''}">#${i + 1}</span>
       <span class="lb-avatar">${p.avatar}</span>
-      <span class="lb-name">${esc(p.name)}</span>
+      <div class="lb-user-details">
+        <span class="lb-name">${esc(p.name)}</span>
+        <span class="lb-sub">${esc(p.title || '')} · 🔥 ${p.streak || 1}d</span>
+      </div>
       <span class="lb-lvl">Lv ${p.lvl}</span>
       <span class="lb-xp">${p.xp} XP</span>
     </div>

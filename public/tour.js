@@ -116,10 +116,15 @@ function handleTourResize() {
   renderCurrentStep();
 }
 
-function startAppTour() {
+function startAppTour(opts = {}) {
   initTourDOM();
   // Close any open modals
   document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+
+  // If requested or if the board is completely empty, start a live demonstration master lesson
+  if (opts.loadDemoLesson && typeof window.startLesson === 'function') {
+    window.startLesson('Photosynthesis');
+  }
 
   // Ensure sidebars are expanded for the tour
   const leftSidebar = document.getElementById('leftSidebar');
@@ -165,7 +170,10 @@ function stopAppTour() {
   }
 
   if (window.showGameNotif) {
-    showGameNotif('🎓', 'TOUR COMPLETE', 'Ready to explore! Start a topic anytime.', 'green', 2500);
+    showGameNotif('🎓', 'STUDIO READY', 'Demo complete! Type any topic or ask a question.', 'green', 2500);
+  }
+  if (window.awardXP && (!window.STATE?.earnedBadges?.includes('first_lesson'))) {
+    awardXP(50);
   }
 }
 
