@@ -10,6 +10,23 @@ const CHALK = {
   pink:'#f1948a',  blue:'#85c1e9',   orange:'#f0a500',
   red:'#ef4444',
 };
+
+function getChalk(colorKey) {
+  const isLight = window.STATE?.boardTheme === 'whiteboard';
+  if (isLight) {
+    const lightMap = {
+      white: '#0f172a',
+      yellow: '#b45309',
+      green: '#047857',
+      pink: '#be123c',
+      blue: '#0369a1',
+      orange: '#c2410c',
+      red: '#b91c1c',
+    };
+    return lightMap[colorKey] || colorKey;
+  }
+  return CHALK[colorKey] || colorKey;
+}
 const SPEED = {
   slow:   {char:40, line:26},
   normal: {char:18, line:12},
@@ -30,6 +47,7 @@ class Whiteboard {
     this._paused  = false;
     this._writing = false;
     this._abort   = false;
+    this._renderId = 0;
 
     // Virtual coordinate space
     this.VW     = 880;
@@ -54,21 +72,32 @@ class Whiteboard {
   setPaused(v) { this._paused = v; }
   isWriting()  { return this._writing; }
 
+  /** Resolves chalk color dynamically based on active board theme */
+  _chalk(name) {
+    if (!name) return getChalk('white');
+    if (CHALK[name]) return getChalk(name);
+    for (const [key, val] of Object.entries(CHALK)) {
+      if (val.toLowerCase() === String(name).toLowerCase()) return getChalk(key);
+    }
+    return name;
+  }
+
   /** Full clear — resets cursor to top */
   clear() {
+    this._renderId++;
     this._abort   = true;
     this._writing = false;
     this.cx = this.margin;
     this.cy = 52;
-    this._setCanvasVH(580);   // reset to default virtual height
+    this._setCanvasVH(580, true);   // reset to default virtual height
     this._clearCanvas();
     if (this.wrap) this.wrap.scrollTop = 0;
-    // Allow next render after a tick
-    setTimeout(() => { this._abort = false; }, 50);
   }
 
   /** Render a new lesson from the top */
   async renderLesson(blocks, opts = {}) {
+    this._renderId++;
+    const currentId   = this._renderId;
     this._abort       = false;
     this._writing     = true;
     this._onBlockDone = opts.onBlockDone || null;
@@ -80,15 +109,20 @@ class Whiteboard {
     this._ensureHeight();
 
     for (let i = 0; i < blocks.length; i++) {
-      if (this._abort) break;
+      if (this._abort || this._renderId !== currentId) break;
       await this._waitResume();
+      if (this._abort || this._renderId !== currentId) break;
       await this._block(blocks[i]);
       this._ensureHeight();
-      if (this._onBlockDone) this._onBlockDone(i, blocks[i]);
+      if (this._onBlockDone && !this._abort && this._renderId === currentId) {
+        this._onBlockDone(i, blocks[i]);
+      }
     }
 
-    this._writing = false;
-    if (!this._abort && this._onAllDone) this._onAllDone();
+    if (this._renderId === currentId) {
+      this._writing = false;
+      if (!this._abort && this._onAllDone) this._onAllDone();
+    }
   }
 
   /**
@@ -96,6 +130,7 @@ class Whiteboard {
    * cy is intentionally NOT reset — continues where lesson ended.
    */
   async appendBlocks(blocks, opts = {}) {
+    const currentId   = this._renderId;
     this._abort       = false;
     this._writing     = true;
     this._onBlockDone = opts.onBlockDone || null;
@@ -108,15 +143,20 @@ class Whiteboard {
     this._ensureHeight();
 
     for (let i = 0; i < blocks.length; i++) {
-      if (this._abort) break;
+      if (this._abort || this._renderId !== currentId) break;
       await this._waitResume();
+      if (this._abort || this._renderId !== currentId) break;
       await this._block(blocks[i]);
       this._ensureHeight();
-      if (this._onBlockDone) this._onBlockDone(i, blocks[i]);
+      if (this._onBlockDone && !this._abort && this._renderId === currentId) {
+        this._onBlockDone(i, blocks[i]);
+      }
     }
 
-    this._writing = false;
-    if (!this._abort && this._onAllDone) this._onAllDone();
+    if (this._renderId === currentId) {
+      this._writing = false;
+      if (!this._abort && this._onAllDone) this._onAllDone();
+    }
   }
 
   /* ── Canvas height management ───────────────────────────── */
@@ -132,33 +172,39 @@ class Whiteboard {
   }
 
   /** Set canvas to virtualH virtual units tall, preserving drawn content */
-  _setCanvasVH(virtualH) {
+  _setCanvasVH(virtualH, allowShrink = false) {
     const dpr    = window.devicePixelRatio || 1;
     const s      = this._scale();
-    const physH  = Math.ceil(virtualH * s);
-    if (physH <= this.canvas.height) return; // never shrink
+    const cssH   = Math.ceil(virtualH * s);
+    const physH  = Math.ceil(cssH * dpr);
+    if (!allowShrink && physH <= this.canvas.height) return;
 
     // Snapshot existing pixels
     const tmp = document.createElement('canvas');
     tmp.width  = this.canvas.width;
     tmp.height = this.canvas.height;
-    tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+    if (this.canvas.width && this.canvas.height) {
+      tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+    }
 
     // Resize (this clears the canvas)
     this.canvas.height       = physH;
-    this.canvas.style.height = Math.ceil(physH / dpr) + 'px';
+    this.canvas.style.height = cssH + 'px';
 
-    // Restore snapshot
-    this.ctx.drawImage(tmp, 0, 0);
+    // Restore snapshot with exact DPR transform
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (tmp.width && tmp.height && !allowShrink) {
+      this.ctx.drawImage(tmp, 0, 0);
+    }
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   /** Smoothly scroll so the current writing position stays visible */
   _scrollFollow() {
     if (!this.wrap || window.STATE?.autoScroll === false) return;
-    const s   = this._scale();
-    const dpr = window.devicePixelRatio || 1;
+    const s = this._scale();
     // cy in virtual units → CSS pixels
-    const targetPx = Math.max(0, (this.cy - 100) * s / dpr);
+    const targetPx = Math.max(0, (this.cy - 100) * s);
     this.wrap.scrollTo({ top: targetPx, behavior: 'smooth' });
   }
 
@@ -205,7 +251,7 @@ class Whiteboard {
     const s = this._scale(), ctx = this.ctx;
     // Subtle underline before text appears
     ctx.save();
-    ctx.strokeStyle = CHALK.yellow;
+    ctx.strokeStyle = this._chalk('yellow');
     ctx.lineWidth   = 2 * s;
     ctx.globalAlpha = 0.25;
     ctx.beginPath();
@@ -215,7 +261,7 @@ class Whiteboard {
     ctx.restore();
 
     await this._write(b.text, this.cx, this.cy, {
-      font: `bold ${FS.heading}px ${FC}`, color: CHALK.yellow, glow: true,
+      font: `bold ${FS.heading}px ${FC}`, color: this._chalk('yellow'), glow: true,
     });
     this.cy += 54;
   }
@@ -226,7 +272,7 @@ class Whiteboard {
     for (const line of this._wrap(b.text, FS.text, this.maxW)) {
       if (this._abort) return;
       await this._waitResume();
-      await this._write(line, this.cx, this.cy, { font:`${FS.text}px ${FC}`, color:CHALK.white });
+      await this._write(line, this.cx, this.cy, { font:`${FS.text}px ${FC}`, color: this._chalk('white') });
       this.cy += this.lineH;
     }
     this.cy += 8;
@@ -240,7 +286,7 @@ class Whiteboard {
       await this._waitResume();
       const s = this._scale(), ctx = this.ctx;
       ctx.save();
-      ctx.fillStyle   = CHALK.green;
+      ctx.fillStyle   = this._chalk('green');
       ctx.globalAlpha = 0.88;
       ctx.beginPath();
       ctx.arc((this.cx + 5) * s, (this.cy + 8) * s, 5 * s, 0, Math.PI * 2);
@@ -250,7 +296,7 @@ class Whiteboard {
       const lines = this._wrap(item, FS.bullet, this.maxW - 22);
       for (let li = 0; li < lines.length; li++) {
         await this._write(lines[li], this.cx + 21, this.cy, {
-          font: `${FS.bullet}px ${FC}`, color: CHALK.white,
+          font: `${FS.bullet}px ${FC}`, color: this._chalk('white'),
         });
         if (li < lines.length - 1) this.cy += this.lineH - 4;
       }
@@ -264,7 +310,7 @@ class Whiteboard {
     this.cy += 12;
     const s = this._scale(), ctx = this.ctx;
     ctx.save();
-    ctx.strokeStyle = CHALK.green;
+    ctx.strokeStyle = this._chalk('green');
     ctx.lineWidth   = 1.5 * s;
     ctx.globalAlpha = 0.38;
     ctx.setLineDash([5 * s, 5 * s]);
@@ -274,7 +320,7 @@ class Whiteboard {
     ctx.restore();
 
     await this._write(b.text, this.cx + 12, this.cy + 8, {
-      font: `${FS.equation}px ${FM}`, color: CHALK.green, glow: true,
+      font: `${FS.equation}px ${FM}`, color: this._chalk('green'), glow: true,
     });
     this.cy += 62;
   }
@@ -283,7 +329,7 @@ class Whiteboard {
   async _emphasize(b) {
     this.cy += 10;
     await this._write(b.text, this.cx, this.cy, {
-      font: `bold ${FS.emphasize}px ${FC}`, color: CHALK.pink, glow: true,
+      font: `bold ${FS.emphasize}px ${FC}`, color: this._chalk('pink'), glow: true,
     });
     const s     = this._scale(), ctx = this.ctx;
     const textW = this._measure(b.text, FS.emphasize, true) * s;
@@ -291,7 +337,7 @@ class Whiteboard {
     await this._delay(70);
 
     ctx.save();
-    ctx.strokeStyle = CHALK.pink;
+    ctx.strokeStyle = this._chalk('pink');
     ctx.lineWidth   = 2.5 * s;
     ctx.globalAlpha = 0.72;
 
@@ -323,7 +369,7 @@ class Whiteboard {
     ctx.restore();
 
     await this._write('Checkpoint — Think about it!', this.cx + 34, this.cy, {
-      font: `bold ${FS.checkpoint}px ${FC}`, color: CHALK.orange,
+      font: `bold ${FS.checkpoint}px ${FC}`, color: this._chalk('orange'),
     });
     this.cy += 30;
     await this._delay(500);
@@ -358,7 +404,7 @@ class Whiteboard {
     const label = sh.label || '';
 
     ctx.save();
-    ctx.strokeStyle = CHALK.blue;
+    ctx.strokeStyle = this._chalk('blue');
     ctx.fillStyle   = 'rgba(133,193,233,0.055)';
     ctx.lineWidth   = 2.2 * s;
     ctx.globalAlpha = 0.9;
@@ -565,43 +611,49 @@ class Whiteboard {
     const rect = wrap.getBoundingClientRect();
     const dpr  = window.devicePixelRatio || 1;
     const w    = Math.floor(rect.width);
+    if (!w) return;
     const visH = Math.max(400, Math.floor(rect.height));
 
-    // Only update width — never shrink height (would erase content)
-    const newW = Math.floor(w * dpr);
-    if (canvas.width !== newW) {
-      // Snapshot content
+    const currentCssH = parseFloat(canvas.style.height) || visH;
+    const newCssH = Math.max(currentCssH, visH);
+
+    const newPhysW = Math.round(w * dpr);
+    const newPhysH = Math.round(newCssH * dpr);
+
+    if (canvas.width !== newPhysW || canvas.height !== newPhysH) {
       const tmp = document.createElement('canvas');
       tmp.width  = canvas.width;
       tmp.height = canvas.height;
-      tmp.getContext('2d').drawImage(canvas, 0, 0);
-
-      canvas.width       = newW;
-      canvas.style.width = w + 'px';
-
-      // Keep height at least the visible area
-      const minH = Math.floor(visH * dpr);
-      if (canvas.height < minH) {
-        canvas.height       = minH;
-        canvas.style.height = visH + 'px';
+      if (canvas.width && canvas.height) {
+        tmp.getContext('2d').drawImage(canvas, 0, 0);
       }
-      this.ctx.drawImage(tmp, 0, 0);
-    }
-    // Ensure minimum visible height without shrinking
-    const minH = Math.floor(visH * dpr);
-    if (canvas.height < minH) {
-      this._setCanvasVH(visH);
-      canvas.style.height = visH + 'px';
+
+      canvas.width       = newPhysW;
+      canvas.height      = newPhysH;
+      canvas.style.width  = w + 'px';
+      canvas.style.height = newCssH + 'px';
+
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (tmp.width && tmp.height) {
+        this.ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, newPhysW, newPhysH);
+      }
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
   }
 
   _scale() {
-    const dpr = window.devicePixelRatio || 1;
-    return (this.canvas.width / dpr) / this.VW;
+    const wrap = this.wrap || this.canvas.parentElement;
+    const w = wrap ? wrap.getBoundingClientRect().width : (this.canvas.clientWidth || this.VW);
+    return Math.max(0.3, (w || this.VW) / this.VW);
   }
 
   _clearCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    this.ctx.save();
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.restore();
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   /* ── Text helpers ───────────────────────────────────────── */
@@ -613,17 +665,30 @@ class Whiteboard {
   }
 
   _wrap(text, size, maxW) {
-    const ctx=this.ctx, s=this._scale();
-    ctx.save(); ctx.font=`${size}px ${FC}`;
-    const words=text.split(' '), lines=[]; let line='';
-    for (const word of words) {
-      const test=line?line+' '+word:word;
-      if (ctx.measureText(test).width/s>maxW&&line) { lines.push(line); line=word; }
-      else line=test;
+    const ctx = this.ctx, s = this._scale();
+    ctx.save(); ctx.font = `${size}px ${FC}`;
+    const paragraphs = String(text || '').split(/\r?\n/);
+    const lines = [];
+    for (const para of paragraphs) {
+      if (!para.trim()) {
+        lines.push('');
+        continue;
+      }
+      const words = para.split(/\s+/);
+      let line = '';
+      for (const word of words) {
+        const test = line ? line + ' ' + word : word;
+        if (ctx.measureText(test).width / s > maxW && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
     }
-    if(line)lines.push(line);
     ctx.restore();
-    return lines.length?lines:[''];
+    return lines.length ? lines : [''];
   }
 
   /* ── Save image — full blackboard (background + chalk) ─── */

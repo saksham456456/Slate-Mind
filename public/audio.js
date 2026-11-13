@@ -80,8 +80,10 @@ function playEraserSound() {
 }
 
 function sound(type) {
-  if (!window.STATE?.soundOn || !_audioCtx) return;
-  const ctx = _audioCtx;
+  if (!window.STATE?.soundOn) return;
+  const ctx = initAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   const now = ctx.currentTime;
   const beep = (f, t, vol = 0.1, wave = 'sine', dur = 0.3) => {
     const o = ctx.createOscillator(), g = ctx.createGain();

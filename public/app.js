@@ -456,7 +456,7 @@ function toggleFullscreen() {
     el('leftSidebar').classList.remove('collapsed');
     el('rightSidebar').classList.remove('collapsed');
   }
-  setTimeout(() => wb._resize(), 300);
+  setTimeout(() => (wb || window.wb)?._resize(), 300);
 }
 
 /* ── Onboarding Experience ────────────────────────────────────── */
@@ -508,8 +508,10 @@ function wire() {
 
   /* Board controls */
   el('pauseBtn').addEventListener('click', () => {
-    const p = !wb._paused;
-    wb.setPaused(p);
+    const board = wb || window.wb;
+    if (!board) return;
+    const p = !board._paused;
+    board.setPaused(p);
     el('pauseBtn').textContent = p ? '▶ Resume' : '⏸ Pause';
   });
   el('speedBtn').addEventListener('click', () => {
@@ -518,7 +520,7 @@ function wire() {
     const lb = ['Slow', 'Normal', 'Fast', 'Instant'];
     const n = (sp.indexOf(STATE.writeSpeed) + 1) % sp.length;
     STATE.writeSpeed = sp[n];
-    wb.setSpeed(STATE.writeSpeed);
+    (wb || window.wb)?.setSpeed(STATE.writeSpeed);
     el('speedBtn').textContent = `${ic[n]} ${lb[n]}`;
     save();
     if (sp[n] === 'fast' || sp[n] === 'instant') {
@@ -539,7 +541,7 @@ function wire() {
     setUIState('idle');
     el('topicInput').focus();
   });
-  el('screenshotBtn').addEventListener('click', () => wb.saveAsImage(el('metaTopic')?.textContent));
+  el('screenshotBtn').addEventListener('click', () => (wb || window.wb)?.saveAsImage(el('metaTopic')?.textContent));
   el('exportHtmlBtn')?.addEventListener('click', () => {
     const topic = window.lastTopic || 'Lesson';
     const fact = el('factText')?.textContent || '';
@@ -586,19 +588,19 @@ function wire() {
   el('leftOpenBtn').addEventListener('click', () => {
     el('leftSidebar').classList.remove('collapsed');
     el('leftOpenBtn').style.display = 'none';
-    setTimeout(() => wb._resize(), 280);
+    setTimeout(() => (wb || window.wb)?._resize(), 280);
   });
 
   /* Sidebar toggles — RIGHT */
   el('rightCloseBtn').addEventListener('click', () => {
     el('rightSidebar').classList.add('collapsed');
     el('rightOpenHudBtn').style.display = 'flex';
-    setTimeout(() => wb._resize(), 280);
+    setTimeout(() => (wb || window.wb)?._resize(), 280);
   });
   el('rightOpenHudBtn').addEventListener('click', () => {
     el('rightSidebar').classList.remove('collapsed');
     el('rightOpenHudBtn').style.display = 'none';
-    setTimeout(() => wb._resize(), 280);
+    setTimeout(() => (wb || window.wb)?._resize(), 280);
   });
 
   /* Right sidebar tabs */
@@ -680,7 +682,7 @@ function wire() {
   });
   el('cpContinueBtn').addEventListener('click', () => {
     closeModal('checkpointOverlay');
-    wb.setPaused(false);
+    (wb || window.wb)?.setPaused(false);
   });
   window.addEventListener('wb:checkpoint', e => showCheckpoint(e.detail.question, e.detail.hint));
 
@@ -727,7 +729,7 @@ function wire() {
       document.querySelectorAll('.speed-opt').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
       STATE.writeSpeed = b.dataset.speed;
-      wb.setSpeed(b.dataset.speed);
+      (wb || window.wb)?.setSpeed(b.dataset.speed);
       save();
     });
   });

@@ -43,7 +43,7 @@ describe('SlateMind Frontend Modules Unit Test Suite', () => {
           },
           textContent: '',
           innerHTML: '',
-          appendChild() {},
+          children: [], appendChild(c) { this.children = this.children || []; this.children.push(c); },
           prepend() {},
           addEventListener() {},
           remove() {}
@@ -250,6 +250,21 @@ describe('SlateMind Frontend Modules Unit Test Suite', () => {
       `, context);
       combo = vm.runInContext('window.quizCombo;', context);
       assert.equal(combo, 0);
+    });
+
+    test('renders dynamically any number of options (>4) with correct letter indexing', () => {
+      const q = {
+        question: 'Which of the following are prime numbers?',
+        options: ['2', '4', '6', '8', '11'],
+        correct: 4,
+        explanation: '11 is prime'
+      };
+      vm.runInContext(`
+        setupQuizPanel([${JSON.stringify(q)}]);
+      `, context);
+      const opts = vm.runInContext("document.getElementById('quizOptions');", context);
+      assert.equal(opts.children.length, 5);
+      assert.match(opts.children[4].innerHTML, /<span class="opt-letter">E<\/span>11/);
     });
   });
 });

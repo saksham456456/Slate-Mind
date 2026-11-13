@@ -291,8 +291,11 @@ function blocksToSpeech(blocks) {
 }
 
 let speaking = false;
+let _activeUtterances = [];
+
 function stopReadAloud() {
   speaking = false;
+  _activeUtterances = [];
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   if (el('listenBtn')) el('listenBtn').textContent = '🔊 Listen';
 }
@@ -301,13 +304,23 @@ function toggleReadAloud() {
   if (!('speechSynthesis' in window)) return;
   if (speaking) { stopReadAloud(); return; }
   const parts = blocksToSpeech(window.currentLessonBlocks);
-  if (!parts.length) return;
+  if (!parts.length) {
+    if (window.showGameNotif) {
+      window.showGameNotif('🔊', 'No Lesson Active', 'Load a lesson first to listen to narration', 'blue', 2200);
+    }
+    return;
+  }
   speaking = true;
+  _activeUtterances = [];
   el('listenBtn').textContent = '⏹ Stop';
   parts.forEach((text, i) => {
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = SPEECH_LANG[STATE.profile.language] || 'en-IN';
-    if (i === parts.length - 1) u.onend = stopReadAloud;
+    u.lang = SPEECH_LANG[STATE.profile?.language] || 'en-IN';
+    u.onerror = () => { stopReadAloud(); };
+    if (i === parts.length - 1) {
+      u.onend = () => { stopReadAloud(); };
+    }
+    _activeUtterances.push(u);
     window.speechSynthesis.speak(u);
   });
 }

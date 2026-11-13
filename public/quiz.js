@@ -41,11 +41,11 @@ function renderQ() {
   if (!opts) return;
   opts.innerHTML = '';
 
-  ['A', 'B', 'C', 'D'].forEach((L, i) => {
-    if (!q.options[i]) return;
+  (q.options || []).forEach((optText, i) => {
+    const letter = String.fromCharCode(65 + i);
     const b = document.createElement('button');
     b.className = 'quiz-opt';
-    b.innerHTML = `<span class="opt-letter">${L}</span>${esc(q.options[i])}`;
+    b.innerHTML = `<span class="opt-letter">${letter}</span>${esc(optText)}`;
     b.addEventListener('click', () => answerQ(i, q));
     opts.appendChild(b);
   });
@@ -253,6 +253,11 @@ async function handleFeynmanSubmit() {
   if (!input || !btn) return;
   const text = input.value.trim();
   if (!text) { input.focus(); return; }
+  if (text.length < 20) {
+    showFeynmanError({ message: 'Please write a little more (at least 20 characters) so the professor can evaluate your understanding.' });
+    input.focus();
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Sparring with Professor…';

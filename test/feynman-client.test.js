@@ -79,4 +79,13 @@ describe('Feynman panel (quiz.js)', () => {
     await t.ctx.handleFeynmanSubmit();
     assert.equal(t.element('feynmanSubmitBtn').disabled, false);
   });
+
+  test('rejects explanation under 20 characters before making network request', async () => {
+    let called = false;
+    t = sandbox(async () => { called = true; return { ok: true, json: async () => ({}) }; });
+    t.element('feynmanInput').value = 'Too short';
+    await t.ctx.handleFeynmanSubmit();
+    assert.equal(called, false);
+    assert.match(t.element('feynmanFeedback').textContent, /at least 20 characters/);
+  });
 });
