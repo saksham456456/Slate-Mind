@@ -12,12 +12,18 @@ const post = (base, path, body) => fetch(`${base}${path}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
 const setLive = (url, extra = {}) => {
-  process.env.GROQ_API_KEY = 'k';
-  process.env.GROQ_API_URL = url;
+  process.env.GEMINI_API_KEY = 'k';
+  process.env.GEMINI_API_URL = url;
+  delete process.env.GROQ_API_KEY;
   delete process.env.OPENAI_API_KEY;
   Object.assign(process.env, extra);
 };
-const setOffline = () => { delete process.env.GROQ_API_KEY; delete process.env.OPENAI_API_KEY; };
+const setOffline = () => {
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_URL;
+  delete process.env.GROQ_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+};
 
 describe('Honest behaviour and hardening', () => {
   let server, base, mock;
@@ -60,8 +66,9 @@ describe('Honest behaviour and hardening', () => {
 
   describe('configuration', () => {
     test('placeholder keys from .env.example do not count as a live AI', async () => {
-      process.env.GROQ_API_KEY = 'gsk_your_groq_key_here';
-      process.env.OPENAI_API_KEY = 'sk-your_openai_key_here';
+      process.env.GEMINI_API_KEY = 'your_gemini_key_here';
+      delete process.env.GROQ_API_KEY;
+      delete process.env.OPENAI_API_KEY;
       const health = await (await fetch(`${base}/api/health`)).json();
       assert.equal(health.hasKey, false);
       const res = await post(base, '/api/ask', { question: 'Why?', topic: 'Light' });
@@ -157,16 +164,10 @@ describe('Honest behaviour and hardening', () => {
   });
 
   describe('providers and error hygiene', () => {
-    test('falls back from Groq to OpenAI when Groq fails', async () => {
-      const second = await startMockAI();
-      mock.script.push(() => ({ status: 500, raw: 'groq down' }));
-      process.env.OPENAI_API_KEY = 'k2';
-      process.env.OPENAI_API_URL = second.url;
+    test('handles Gemini provider failures cleanly and logs warning', async () => {
+      mock.script.push(() => ({ status: 500, raw: 'gemini down' }));
       const res = await post(base, '/api/ask', { question: 'Why?', topic: 'Light' });
-      assert.equal(res.status, 200);
-      assert.equal(second.calls.length, 1);
-      await second.close();
-      delete process.env.OPENAI_API_KEY; delete process.env.OPENAI_API_URL;
+      assert.equal(res.status, 503);
     });
 
     test('upstream error text never reaches the browser', async () => {

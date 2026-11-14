@@ -5,7 +5,7 @@ require('dotenv').config();
 const { hasLiveAI, providers } = require('./lib/providers');
 const { allowedOrigins } = require('./lib/config');
 if (!hasLiveAI()) {
-  console.warn('⚠️ Neither GROQ_API_KEY nor OPENAI_API_KEY set — SlateMind will run in offline mode using sample & fallback curriculum.');
+  console.warn('⚠️ GEMINI_API_KEY is not set — SlateMind will run in offline mode using sample & fallback curriculum.');
 }
 
 const express    = require('express');
@@ -58,7 +58,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     hasKey: hasLiveAI(),
-    providers: { groq: active.has('groq'), openai: active.has('openai') },
+    providers: { gemini: active.has('gemini') },
     timestamp: new Date().toISOString()
   });
 });

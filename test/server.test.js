@@ -13,10 +13,11 @@ describe('SlateMind Server & API Automated Test Suite', () => {
   let mockAI;
 
   before(async () => {
-    // A local stand-in for Groq so live-AI endpoints can be tested without a real key
+    // A local stand-in for Gemini so live-AI endpoints can be tested without a real key
     mockAI = await startMockAI();
-    process.env.GROQ_API_KEY = 'test-key';
-    process.env.GROQ_API_URL = mockAI.url;
+    process.env.GEMINI_API_KEY = 'test-key';
+    process.env.GEMINI_API_URL = mockAI.url;
+    delete process.env.GROQ_API_KEY;
     delete process.env.OPENAI_API_KEY;
     await new Promise(resolve => {
       // Listen on dynamic ephemeral port 0
@@ -28,6 +29,8 @@ describe('SlateMind Server & API Automated Test Suite', () => {
   });
 
   after(async () => {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_URL;
     await new Promise(resolve => server.close(resolve));
     await mockAI.close();
   });
@@ -116,8 +119,8 @@ describe('SlateMind Server & API Automated Test Suite', () => {
       assert.equal(body.status, 'ok');
       assert.equal(typeof body.hasKey, 'boolean');
       assert.equal(typeof body.providers, 'object');
-      assert.equal(typeof body.providers.groq, 'boolean');
-      assert.equal(typeof body.providers.openai, 'boolean');
+      assert.equal(typeof body.providers.gemini, 'boolean');
+      assert.equal(body.providers.gemini, true);
       assert.ok(body.timestamp);
     });
   });

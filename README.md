@@ -33,10 +33,10 @@
 npm install
 ```
 
-### 2. Add your Groq API key
+### 2. Add your Gemini API key
 ```bash
 cp .env.example .env
-# Edit .env and paste your key from https://console.groq.com/keys
+# Edit .env and paste your free key from https://aistudio.google.com/apikey
 ```
 
 ### 3. Start
@@ -51,7 +51,7 @@ npm start
 
 1. Push to GitHub (`.env` is gitignored — never commit it)
 2. Import repo in [Vercel](https://vercel.com)
-3. Add `GROQ_API_KEY` in **Settings → Environment Variables**
+3. Add `GEMINI_API_KEY` in **Settings → Environment Variables**
 4. Deploy ✓
 
 A `vercel.json` is included: it serves `public/` and routes `/api/*` to the serverless functions.
@@ -101,13 +101,13 @@ ai-teacher-gamified/
 - **Level thresholds**: edit `LEVELS` array in `app.js`
 - **Badges**: add/remove entries in `BADGES` array in `app.js`
 - **Daily challenges**: extend `DAILY_CHALLENGES` array in `app.js`
-- **Model**: set `GROQ_MODEL` in `.env`
+- **Model**: set `GEMINI_MODEL` in `.env` (defaults to `gemini-2.0-flash`)
 
 ---
 
 ## 📝 Notes
 
-- Groq API key is **server-side only** — never sent to the browser
+- Gemini API key is **server-side only** — never sent to the browser
 - All game progress is stored in `localStorage` under `pb_v2`
 - The canvas engine uses `devicePixelRatio` for crisp rendering on HiDPI screens
 - Checkpoint blocks pause the writing animation and show a modal
@@ -118,9 +118,8 @@ ai-teacher-gamified/
 
 | Variable | Purpose |
 |---|---|
-| `GROQ_API_KEY` | Primary AI provider |
-| `OPENAI_API_KEY` | Optional backup provider, used if Groq fails |
-| `GROQ_MODEL`, `OPENAI_MODEL` | Optional model overrides |
+| `GEMINI_API_KEY` | Primary AI provider (free tier: 1M TPM, 15 RPM, 1,500 req/day) |
+| `GEMINI_MODEL` | Optional model override (defaults to `gemini-2.0-flash`) |
 | `ALLOWED_ORIGINS` | Extra comma-separated origins allowed by CORS (exact match, e.g. `https://myschool.example`) |
 
 With no key, SlateMind runs in **offline mode**: the hand-written master lessons still work, an unknown topic gets a clearly labelled generic outline (no XP), and follow-up questions and Feynman grading say they need a live AI instead of inventing answers.
@@ -136,7 +135,7 @@ CI runs both on every push (`.github/workflows/ci.yml`).
 
 **Code map**
 
-- `lib/providers.js`: the AI provider chain (Groq, then OpenAI) with timeouts and fallback
+- `lib/providers.js`: Google Gemini API integration with message formatting, timeouts, and fallback
 - `lib/groq.js`: prompts, JSON validation with one repair retry, lesson and answer generation
 - `lib/schema.js`: zod schemas (lenient lists: one bad block is dropped, not the whole lesson)
 - `lib/http.js`: shared request parsing and error responses (provider errors are never sent to the browser)
