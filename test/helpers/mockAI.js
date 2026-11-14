@@ -70,7 +70,7 @@ async function startMockAI() {
     });
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
-  mock.url = `http://127.0.0.1:${server.address().port}/v1beta/models/gemini-2.0-flash:generateContent`;
+  mock.url = `http://127.0.0.1:${server.address().port}/v1beta/models/gemini-3.1-flash-lite:generateContent`;
   mock.close = () => new Promise(r => server.close(r));
   return mock;
 }
