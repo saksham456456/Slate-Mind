@@ -163,9 +163,11 @@ class Whiteboard {
 
   /** Expand canvas if cy is approaching the bottom, then scroll */
   _ensureHeight() {
-    const s       = this._scale();
-    const needPx  = (this.cy + 140) * s;
-    if (needPx > this.canvas.height) {
+    const s           = this._scale();
+    const dpr         = window.devicePixelRatio || 1;
+    const currentCssH = parseFloat(this.canvas.style.height) || (this.canvas.height / dpr);
+    const needPx      = (this.cy + 140) * s;
+    if (needPx > currentCssH) {
       this._setCanvasVH(this.cy + 320);
     }
     this._scrollFollow();
@@ -193,7 +195,7 @@ class Whiteboard {
 
     // Restore snapshot with exact DPR transform
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (tmp.width && tmp.height && !allowShrink) {
+    if (tmp.width && !allowShrink) {
       this.ctx.drawImage(tmp, 0, 0);
     }
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -315,7 +317,11 @@ class Whiteboard {
     ctx.globalAlpha = 0.38;
     ctx.setLineDash([5 * s, 5 * s]);
     ctx.beginPath();
-    ctx.roundRect((this.cx - 12) * s, (this.cy - 10) * s, (this.maxW + 24) * s, 52 * s, 7 * s);
+    if (ctx.roundRect) {
+      ctx.roundRect((this.cx - 12) * s, (this.cy - 10) * s, (this.maxW + 24) * s, 52 * s, 7 * s);
+    } else {
+      ctx.rect((this.cx - 12) * s, (this.cy - 10) * s, (this.maxW + 24) * s, 52 * s);
+    }
     ctx.stroke();
     ctx.restore();
 
@@ -635,7 +641,7 @@ class Whiteboard {
 
       this.ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (tmp.width && tmp.height) {
-        this.ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, newPhysW, newPhysH);
+        this.ctx.drawImage(tmp, 0, 0);
       }
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
